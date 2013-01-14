@@ -53,8 +53,7 @@ void error( string str ) {
 class Displayable {
 	public:
 		virtual void paint(XInfo &xinfo) = 0;
-};       
-
+};
 
 class Plane : public Displayable {
 	public:
@@ -73,7 +72,15 @@ class Plane : public Displayable {
 			// 	0,
 			// 	360*64);
 		}
-		
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
 		void lookat(int x, int y) {
 			look_x = x;
 			look_y = y;
@@ -98,6 +105,29 @@ class Plane : public Displayable {
 		int look_y;
 };
 
+class Bomb : public Displayable {
+
+	public:
+		virtual void paint(XInfo &xinfo) {
+			XDrawLine(xinfo.display, xinfo.window, xinfo.gc[1], x, y-10, x+10, y+10);
+		}
+
+		void move(XInfo &xinfo) {
+			y = y + speed;
+			//if ()
+		}
+
+		Bomb(int x, int y): x(x), y(y) {
+			speed = 2;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+
+};
+
 class Ball : public Displayable {
 	public:
 		virtual void paint(XInfo &xinfo) {
@@ -120,7 +150,7 @@ class Ball : public Displayable {
 		}
 		
 		Ball(int x, int y, int diameter): x(x), y(y), diameter(diameter) {
-			direction = 4;
+			direction = 40;
 		}
 	
 	private:
@@ -132,6 +162,7 @@ class Ball : public Displayable {
 
 
 list<Displayable *> dList;           // list of Displayables
+list<Bomb *> dBombList;		// list of Bombs
 Plane plane(100, 100, 50, 50);
 Ball ball(500, 450, 140);
 
@@ -290,6 +321,11 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 		if (text[0] == 'q') {
 			error("Terminating normally.");
 		}
+		else if (text[0] == 'm') {
+			Bomb bomb(plane.getX(), plane.getY());
+			dList.push_front(&bomb);
+			dBombList.push_front(&bomb);
+		}
 	}
 }
 
@@ -299,6 +335,15 @@ void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 
 void handleAnimation(XInfo &xinfo, int inside) {
 	ball.move(xinfo);
+
+	list<Bomb *>::const_iterator begin = dBombList.begin();
+	list<Bomb *>::const_iterator end = dBombList.end();
+	while( begin != end ) {
+		Bomb *d = *begin;
+		d->move(xinfo);
+		begin++;
+	}
+
 	if (!inside) {
 		plane.lookat(ball.getX(), ball.getY());
 	}
