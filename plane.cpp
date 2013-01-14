@@ -109,11 +109,8 @@ class Bomb : public Displayable {
 
 	public:
 		void paint(XInfo &xinfo) {
-			cout << "call" << endl; 
 			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, 10, 10, 0, 360*64);
-			//cout << "boo!" << endl;
 			//XDrawLine(xinfo.display, xinfo.window, xinfo.gc[0], x, y, x+100, y+100);
-			//cout << "yay" <<endl;
 		}
 
 		void move(XInfo &xinfo) {
@@ -122,7 +119,6 @@ class Bomb : public Displayable {
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
-			cout << "init" << endl;
 			speed = 2;
 		}
 
@@ -166,8 +162,8 @@ class Ball : public Displayable {
 };
 
 
-list<Displayable *> dList;           // list of Displayables
-list<Bomb *> dBombList;		// list of Bombs
+list<Displayable *> dList;           	// list of Displayables
+list<Bomb *> dBombList;					// list of Bombs
 Plane plane(100, 100, 50, 50);
 Ball ball(500, 450, 140);
 
@@ -282,7 +278,6 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 void repaint( XInfo &xinfo) {
 	list<Displayable *>::const_iterator begin = dList.begin();
 	list<Displayable *>::const_iterator end = dList.end();
-	cout << dList.size() << endl; 
 
 	//XClearWindow( xinfo.display, xinfo.window );
 	
@@ -332,7 +327,7 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 		else if (text[0] == 'm') {
 			Bomb *bomb = new Bomb(plane.getX(), plane.getY());
 			dList.push_front(bomb);
-			//dBombList.push_front(&bomb);
+			dBombList.push_front(bomb);
 		}
 	}
 }
