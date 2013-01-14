@@ -56,22 +56,22 @@ class Displayable {
 };       
 
 
-class Eye : public Displayable {
+class Plane : public Displayable {
 	public:
 		virtual void paint(XInfo &xinfo) {
 			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, width, height, 0, 360*64);
 			double cx = x + width/2;
 			double cy = y + height/2;
 						
-			double alpha;
-			if (look_x > cx ) alpha = atan((look_y - cy) / (look_x - cx) );
-			else alpha = M_PI - atan((look_y - cy) / (cx - look_x) );
-			XFillArc(xinfo.display, xinfo.window, xinfo.gc[0], 
-				cx + cos(alpha)*width/4 - width/8,
-				cy + sin(alpha)*height/4 - height/8,
-				width/4, height/4,
-				0,
-				360*64);
+			// double alpha;
+			// if (look_x > cx ) alpha = atan((look_y - cy) / (look_x - cx) );
+			// else alpha = M_PI - atan((look_y - cy) / (cx - look_x) );
+			// XFillArc(xinfo.display, xinfo.window, xinfo.gc[0], 
+			// 	cx + cos(alpha)*width/4 - width/8,
+			// 	cy + sin(alpha)*height/4 - height/8,
+			// 	width/4, height/4,
+			// 	0,
+			// 	360*64);
 		}
 		
 		void lookat(int x, int y) {
@@ -79,8 +79,12 @@ class Eye : public Displayable {
 			look_y = y;
 		}
       
+      	void moveto(int newx, int newy) {
+      		x = newx;
+      		y = newy;
+      	}
 	// constructor
-	Eye(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {
+	Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {
 		look_x = x+width/2;
 		look_y = y+height/2;
 	}
@@ -128,8 +132,8 @@ class Ball : public Displayable {
 
 
 list<Displayable *> dList;           // list of Displayables
-Eye left_eye(100, 100, 100, 200);
-Ball ball(100, 450, 40);
+Plane plane(100, 100, 50, 50);
+Ball ball(500, 450, 140);
 
 
 /*
@@ -158,8 +162,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	hints.x = 100;
 	hints.y = 100;
-	hints.width = 400;
-	hints.height = 500;
+	hints.width = 1200;
+	hints.height = 800;
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow( 
@@ -174,8 +178,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSetStandardProperties(
 		xInfo.display,		// display containing the window
 		xInfo.window,		// window whose properties are set
-		"x3_animation",		// window's title
-		"Animate",			// icon's title
+		"Plane",		// window's title
+		"Plane",			// icon's title
 		None,				// pixmap for the icon
 		argv, argc,			// applications command line args
 		&hints );			// size hints for the window
@@ -205,6 +209,27 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		ButtonPressMask | KeyPressMask | 
 		PointerMotionMask | 
 		EnterWindowMask | LeaveWindowMask);
+
+	/* vars to make blank cursor */
+	Pixmap blank;
+	XColor dummy;
+	char data[1] = {0};
+	Cursor cursor;
+
+	/* make a blank cursor */
+	blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
+	if(blank == None) {
+		error("error: out of memory.");
+	}
+	cursor = XCreatePixmapCursor(xInfo.display, blank, blank, &dummy, &dummy, 0, 0);
+	XFreePixmap (xInfo.display, blank);
+
+	// set the blank cursor
+	XDefineCursor(xInfo.display, xInfo.window, cursor);
+
+	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
+	//XUndefineCursor(xInfo.display, xInfo.window);
+
 
 	/*
 	 * Put the window on the screen.
@@ -240,7 +265,7 @@ void repaint( XInfo &xinfo) {
 
 
 void handleButtonPress(XInfo &xinfo, XEvent &event) {
-	printf("Got button press!\n");
+	cout << "Got button press!" << endl;
 	// dList.push_front(new Text(event.xbutton.x, event.xbutton.y, "Urrp!"));
 	// repaint( dList, xinfo );
 	
@@ -269,15 +294,13 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 }
 
 void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
-	if (inside) {
-		left_eye.lookat(event.xbutton.x, event.xbutton.y);	
-	}
+	plane.moveto(event.xbutton.x, event.xbutton.y);	
 }
 
 void handleAnimation(XInfo &xinfo, int inside) {
 	ball.move(xinfo);
 	if (!inside) {
-		left_eye.lookat(ball.getX(), ball.getY());
+		plane.lookat(ball.getX(), ball.getY());
 	}
 }
 
@@ -290,7 +313,7 @@ unsigned long now() {
 void eventLoop(XInfo &xinfo) {
 	// Add stuff to paint to the display list
 	dList.push_front(&ball);
-	dList.push_front(&left_eye);
+	dList.push_front(&plane);
 	
 	XEvent event;
 	unsigned long lastRepaint = 0;
