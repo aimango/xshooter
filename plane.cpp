@@ -108,8 +108,12 @@ class Plane : public Displayable {
 class Bomb : public Displayable {
 
 	public:
-		virtual void paint(XInfo &xinfo) {
-			XDrawLine(xinfo.display, xinfo.window, xinfo.gc[1], x, y-10, x+10, y+10);
+		void paint(XInfo &xinfo) {
+			cout << "call" << endl; 
+			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, 10, 10, 0, 360*64);
+			//cout << "boo!" << endl;
+			//XDrawLine(xinfo.display, xinfo.window, xinfo.gc[0], x, y, x+100, y+100);
+			//cout << "yay" <<endl;
 		}
 
 		void move(XInfo &xinfo) {
@@ -118,6 +122,7 @@ class Bomb : public Displayable {
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
+			cout << "init" << endl;
 			speed = 2;
 		}
 
@@ -277,6 +282,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 void repaint( XInfo &xinfo) {
 	list<Displayable *>::const_iterator begin = dList.begin();
 	list<Displayable *>::const_iterator end = dList.end();
+	cout << dList.size() << endl; 
 
 	//XClearWindow( xinfo.display, xinfo.window );
 	
@@ -288,7 +294,9 @@ void repaint( XInfo &xinfo) {
 	XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, width, height);
 	while( begin != end ) {
 		Displayable *d = *begin;
+		cout << "before paint" <<endl;
 		d->paint(xinfo);
+		cout << "after paint" <<endl;
 		begin++;
 	}
 	XFlush( xinfo.display );
@@ -322,9 +330,9 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 			error("Terminating normally.");
 		}
 		else if (text[0] == 'm') {
-			Bomb bomb(plane.getX(), plane.getY());
-			dList.push_front(&bomb);
-			dBombList.push_front(&bomb);
+			Bomb *bomb = new Bomb(plane.getX(), plane.getY());
+			dList.push_front(bomb);
+			//dBombList.push_front(&bomb);
 		}
 	}
 }
@@ -336,9 +344,11 @@ void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 void handleAnimation(XInfo &xinfo, int inside) {
 	ball.move(xinfo);
 
+	// not working XD
 	list<Bomb *>::const_iterator begin = dBombList.begin();
 	list<Bomb *>::const_iterator end = dBombList.end();
 	while( begin != end ) {
+		cout <<":("<<endl;
 		Bomb *d = *begin;
 		d->move(xinfo);
 		begin++;
