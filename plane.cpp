@@ -1,13 +1,3 @@
-/*
- * Commands to compile and run
- *
- * g++ -o x3_animation x3_animation.cpp -L/usr/X11R6/lib -lX11 -lstdc++
- * ./x3_animation
- * 
- * Depending on the machine, the -L option and -lstdc++ may
- * not be needed.
- */
-
 #include <iostream>
 #include <list>
 #include <cstdlib>
@@ -34,7 +24,7 @@ struct XInfo {
 	Display	 *display;
 	int		 screen;
 	Window	 window;
-	GC		 gc[3];
+	GC		 gc[2];
 };
 
 
@@ -59,18 +49,6 @@ class Plane : public Displayable {
 	public:
 		virtual void paint(XInfo &xinfo) {
 			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, width, height, 0, 360*64);
-			double cx = x + width/2;
-			double cy = y + height/2;
-						
-			// double alpha;
-			// if (look_x > cx ) alpha = atan((look_y - cy) / (look_x - cx) );
-			// else alpha = M_PI - atan((look_y - cy) / (cx - look_x) );
-			// XFillArc(xinfo.display, xinfo.window, xinfo.gc[0], 
-			// 	cx + cos(alpha)*width/4 - width/8,
-			// 	cy + sin(alpha)*height/4 - height/8,
-			// 	width/4, height/4,
-			// 	0,
-			// 	360*64);
 		}
 
 		int getX() {
@@ -80,29 +58,19 @@ class Plane : public Displayable {
 		int getY() {
 			return y;
 		}
-
-		void lookat(int x, int y) {
-			look_x = x;
-			look_y = y;
+	  
+		void moveto(int newX, int newY) {
+			x = newX;
+			y = newY;
 		}
-      
-      	void moveto(int newx, int newy) {
-      		x = newx;
-      		y = newy;
-      	}
 	// constructor
-	Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {
-		look_x = x+width/2;
-		look_y = y+height/2;
-	}
-      
+	Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {}
+	  
 	private:
 		int x;
 		int y;
 		int width;
 		int height;
-		int look_x;
-		int look_y;
 };
 
 class Bomb : public Displayable {
@@ -119,7 +87,7 @@ class Bomb : public Displayable {
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
-			speed = 2;
+			speed = 5;
 		}
 
 	private:
@@ -199,18 +167,18 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow( 
-		xInfo.display,				// display where window appears
+		xInfo.display,						// display where window appears
 		DefaultRootWindow( xInfo.display ), // window's parent in window tree
-		hints.x, hints.y,			// upper left corner location
-		hints.width, hints.height,	// size of the window
-		Border,						// width of window's border
-		black,						// window border colour
-		white );					// window background colour
+		hints.x, hints.y,					// upper left corner location
+		hints.width, hints.height,			// size of the window
+		Border,								// width of window's border
+		black,								// window border colour
+		white );							// window background colour
 		
 	XSetStandardProperties(
 		xInfo.display,		// display containing the window
 		xInfo.window,		// window whose properties are set
-		"Plane",		// window's title
+		"Plane",			// window's title
 		"Plane",			// icon's title
 		None,				// pixmap for the icon
 		argv, argc,			// applications command line args
@@ -225,7 +193,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
 	XSetLineAttributes(xInfo.display, xInfo.gc[i],
-	                     1, LineSolid, CapButt, JoinRound);
+						 1, LineSolid, CapButt, JoinRound);
 
 	// Reverse Video
 	i = 1;
@@ -234,7 +202,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSetBackground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
 	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
 	XSetLineAttributes(xInfo.display, xInfo.gc[i],
-	                     1, LineSolid, CapButt, JoinRound);
+						 1, LineSolid, CapButt, JoinRound);
 
 
 	XSelectInput(xInfo.display, xInfo.window, 
@@ -279,7 +247,7 @@ void repaint( XInfo &xinfo) {
 	list<Displayable *>::const_iterator begin = dList.begin();
 	list<Displayable *>::const_iterator end = dList.end();
 
-	//XClearWindow( xinfo.display, xinfo.window );
+	// XClearWindow( xinfo.display, xinfo.window );
 	
 	XWindowAttributes windowInfo;
 	XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
@@ -289,9 +257,7 @@ void repaint( XInfo &xinfo) {
 	XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, width, height);
 	while( begin != end ) {
 		Displayable *d = *begin;
-		cout << "before paint" <<endl;
 		d->paint(xinfo);
-		cout << "after paint" <<endl;
 		begin++;
 	}
 	XFlush( xinfo.display );
@@ -339,18 +305,16 @@ void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
 void handleAnimation(XInfo &xinfo, int inside) {
 	ball.move(xinfo);
 
-	// not working XD
 	list<Bomb *>::const_iterator begin = dBombList.begin();
 	list<Bomb *>::const_iterator end = dBombList.end();
 	while( begin != end ) {
-		cout <<":("<<endl;
 		Bomb *d = *begin;
 		d->move(xinfo);
 		begin++;
 	}
 
 	if (!inside) {
-		plane.lookat(ball.getX(), ball.getY());
+		// plane.lookat(ball.getX(), ball.getY());
 	}
 }
 
