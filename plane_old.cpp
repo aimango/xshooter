@@ -49,7 +49,48 @@ class Displayable {
 class Plane : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
+
+			// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+			XColor blue;
+			Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+			Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "blue", &blue, &blue);
+			if (rc == 0) {
+				error("XAllocNamedColor - failed to allocated 'blue' color.");
+			}
+
+			// XPoint points[] = {
+			// 	{x+0, x+0},
+			// 	{x+15, x+15},
+			// 	{x+0, x+15},
+			// 	{x+0, x+0}
+			// };
+			// int npoints = sizeof(points)/sizeof(XPoint);
+			// XDrawLines(xInfo.display, xInfo.window, xInfo.gc[1], points, npoints, CoordModeOrigin);
+			/* draw a small triangle at the top-left corner of the window. */
+			/* the triangle is made of a set of consecutive lines, whose   */
+			/* end-point pixels are specified in the 'points' array.       */
+			/* draw the triangle in a yellow color. */
+			XSetForeground(xInfo.display, xInfo.gc[1], blue.pixel);
+			
+
+			{
+				XPoint points[] = {
+						{x-30, y-15},
+						{x+0, y+30},
+						{x-30, y-15},
+						{x-30, y-15}
+					};
+				int npoints = sizeof(points)/sizeof(XPoint);
+
+				/* draw a small triangle at the top-left corner of the window. */
+				/* the triangle is made of a set of consecutive lines, whose   */
+				/* end-point pixels are specified in the 'points' array.       */
+				XDrawLines(xInfo.display, xInfo.window, xInfo.gc[1], points, npoints, CoordModeOrigin);
+			}
+
+			
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, width, height, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x-15, y+10, 30, 10);
 		}
 
 		int getX() {
@@ -74,24 +115,26 @@ class Plane : public Displayable {
 		int height;
 };
 
-class Bomb : public Displayable {
-
+class Building : public Displayable {
 	public:
-		void paint(XInfo &xInfo) {
-			/* draw a rectangle whose top-left corner is at 'x+120,y+50', its width is */
-			/* 50 pixels, and height is 60 pixels.                                  */
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+20, y+10, 10, 40);
-			//XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, 10, 10, 0, 360*64);
-			//XDrawLine(xInfo.display, xInfo.window, xInfo.gc[0], x, y, x+100, y+100);
+		virtual void paint(XInfo &xInfo) {
+			srand ( time(NULL) );
+			for (int i = 0; i < 12; i++) {
+				int height = rand() % 600 + 50;
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-height, 100, height);
+				heights.push_back(height);
+			}
 		}
 
 		void move(XInfo &xInfo) {
-			y = y + speed;
-			//if ()
+			x = x - speed;
+			if (x < 0) {
+				x = 1200;
+			}
 		}
 
-		Bomb(int x, int y): x(x), y(y) {
-			speed = 5;
+		Building(int x, int y): x(x), y(y) {
+			speed = 10;
 		}
 
 		int getX() {
@@ -101,74 +144,73 @@ class Bomb : public Displayable {
 		int getY() {
 			return y;
 		}
+
+		vector<int> getHeights() {
+			return heights;
+		}
+
 	private:
 		int x;
 		int y;
 		int speed;
-
-};
-
-class Building : public Displayable {
-	public:
-		virtual void paint(XInfo &xInfo) {
-			for (int i = 0; i < maxHoriz; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-heights[i], 100, heights[i]);
-			}
-		}
-		
-		void move(XInfo &xInfo) {
-			//cout << x << endl;
-			int midpoint = x-600;
-			while (x >= midpoint) {
-				cout << "yep " << x << endl;
-				x = x - speed;
-			}
-			// if (x < 0) {
-			// 	for (int i = 0 ; i < 11; i++)
-			// 		heights.push_back( rand() % 600 + 50 );
-			// 	maxHoriz+=12;
-			// 	x+=1200;
-			// }
-		}
-		
-		Building(int x, int y): x(x), y(y), maxHoriz(0) {
-			speed = 100;
-			srand ( time(NULL) );
-			for (int i = 0 ; i < 20; i++)
-				heights.push_back( rand() % 600 + 50 );
-		}
-	
-	private:
-		int x;
-		int y;
-		int speed;
-		int maxHoriz;
 		vector<int> heights;
 };
+
+Plane plane(100, 100, 30, 30);
+Building building(700, 0);
+
+
+class Bomb : public Displayable {
+
+	public:
+		void paint(XInfo &xInfo) {
+			/* need to grab initial velocity of the plane */
+			//XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+20, y+10, 5, 20);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, 10, 10, 0, 360*64);
+		}
+
+		void move(XInfo &xInfo) {
+			y = y + speed;
+			x = x - speed;
+			if (y > building.getY()+800-building.getHeights().at(0))
+				cout << "hit " << 800-building.getHeights().at(0) << endl;
+		}
+
+		Bomb(int x, int y): x(x), y(y) {
+			speed = 5;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+
+};
+
+
 
 /*
  * Display some text where the user clicked the mouse.
  */
 class Text : public Displayable
 {  public:
-      virtual void paint(XInfo &xInfo)
-      {  XDrawImageString( xInfo.display, xInfo.window, xInfo.gc[1], 
-               this->x, this->y, this->s.c_str(), this->s.length() );
-      }
-      
-      // constructor
-      Text(int x, int y, string s):x(x), y(y), s(s)  {}
-      
+	  virtual void paint(XInfo &xInfo)
+	  {  XDrawImageString( xInfo.display, xInfo.window, xInfo.gc[1], 
+			   this->x, this->y, this->s.c_str(), this->s.length() );
+	  }
+	  
+	  // constructor
+	  Text(int x, int y, string s):x(x), y(y), s(s)  {}
+	  
    private:
-      int x;
-      int y;
-      string s;
+	  int x;
+	  int y;
+	  string s;
 };
 
 list<Displayable *> dList;           	// list of Displayables
 list<Bomb *> dBombList;					// list of Bombs
-Plane plane(100, 100, 50, 50);
-Building building(1100, 0);
+
 
 
 /*
@@ -211,13 +253,13 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		white );							// window background colour
 		
 	XSetStandardProperties(
-		xInfo.display,				// display containing the window
-		xInfo.window,				// window whose properties are set
-		"Plane Attack >w<",			// window's title
-		"Plane",					// icon's title
-		None,						// pixmap for the icon
-		argv, argc,					// applications command line args
-		&hints );					// size hints for the window
+		xInfo.display,		// display containing the window
+		xInfo.window,		// window whose properties are set
+		"Plane",			// window's title
+		"Plane",			// icon's title
+		None,				// pixmap for the icon
+		argv, argc,			// applications command line args
+		&hints );			// size hints for the window
 
 	/* 
 	 * Create Graphics Contexts
@@ -335,13 +377,10 @@ void handleKeyPress(XInfo &xInfo, XEvent &event) {
 
 void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
 	plane.moveto(event.xbutton.x, event.xbutton.y);	
-	if (event.xbutton.x > 600){
-		building.move(xInfo);
-	}
 }
 
 void handleAnimation(XInfo &xInfo, int inside) {
-	// building.move(xInfo);
+	building.move(xInfo);
 
 	list<Bomb *>::const_iterator begin = dBombList.begin();
 	list<Bomb *>::const_iterator end = dBombList.end();
@@ -352,11 +391,11 @@ void handleAnimation(XInfo &xInfo, int inside) {
 	}
 
 	if (!inside) {
-		// plane.lookat(ball.getX(), ball.getY());
+		// pause the game?
 	}
 }
 
-unsigned long now() {
+unsigned long now() { // change this timer ...
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000000 + tv.tv_usec;
