@@ -42,13 +42,13 @@ void error( string str ) {
  */
 class Displayable {
 	public:
-		virtual void paint(XInfo &xinfo) = 0;
+		virtual void paint(XInfo &xInfo) = 0;
 };
 
 class Plane : public Displayable {
 	public:
-		virtual void paint(XInfo &xinfo) {
-			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, width, height, 0, 360*64);
+		virtual void paint(XInfo &xInfo) {
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, width, height, 0, 360*64);
 		}
 
 		int getX() {
@@ -76,12 +76,15 @@ class Plane : public Displayable {
 class Bomb : public Displayable {
 
 	public:
-		void paint(XInfo &xinfo) {
-			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, 10, 10, 0, 360*64);
-			//XDrawLine(xinfo.display, xinfo.window, xinfo.gc[0], x, y, x+100, y+100);
+		void paint(XInfo &xInfo) {
+			/* draw a rectangle whose top-left corner is at 'x+120,y+50', its width is */
+			/* 50 pixels, and height is 60 pixels.                                  */
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+20, y+10, 10, 40);
+			//XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, 10, 10, 0, 360*64);
+			//XDrawLine(xInfo.display, xInfo.window, xInfo.gc[0], x, y, x+100, y+100);
 		}
 
-		void move(XInfo &xinfo) {
+		void move(XInfo &xInfo) {
 			y = y + speed;
 			//if ()
 		}
@@ -97,43 +100,52 @@ class Bomb : public Displayable {
 
 };
 
-class Ball : public Displayable {
+class Building : public Displayable {
 	public:
-		virtual void paint(XInfo &xinfo) {
-			XFillArc(xinfo.display, xinfo.window, xinfo.gc[1], x, y, diameter, diameter, 0, 360*64);
+		virtual void paint(XInfo &xInfo) {
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+0, y+50, 400, 400);
 		}
 		
-		void move(XInfo &xinfo) {
-			x = x + direction;
-			if (random() % 100 == 0 || x < -50 || x > 500) {
-				direction = -direction;
+		void move(XInfo &xInfo) {
+			x = x - speed;
+			if (x < -100) {
+				x = 1200;
 			}
 		}
 		
-		int getX() {
-			return x;
-		}
-		
-		int getY() {
-			return y;
-		}
-		
-		Ball(int x, int y, int diameter): x(x), y(y), diameter(diameter) {
-			direction = 40;
+		Building(int x, int y): x(x), y(y) {
+			speed = 10;
 		}
 	
 	private:
 		int x;
 		int y;
-		int diameter;
-		int direction;
+		int speed;
 };
 
+/*
+ * Display some text where the user clicked the mouse.
+ */
+class Text : public Displayable
+{  public:
+      virtual void paint(XInfo &xInfo)
+      {  XDrawImageString( xInfo.display, xInfo.window, xInfo.gc[1], 
+               this->x, this->y, this->s.c_str(), this->s.length() );
+      }
+      
+      // constructor
+      Text(int x, int y, string s):x(x), y(y), s(s)  {}
+      
+   private:
+      int x;
+      int y;
+      string s;
+};
 
 list<Displayable *> dList;           	// list of Displayables
 list<Bomb *> dBombList;					// list of Bombs
 Plane plane(100, 100, 50, 50);
-Ball ball(500, 450, 140);
+Building building(700, 450);
 
 
 /*
@@ -237,41 +249,41 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XMapRaised( xInfo.display, xInfo.window );
 	
 	XFlush(xInfo.display);
-	sleep(2);	// let server get set up before sending drawing commands
+	//sleep(2);	// let server get set up before sending drawing commands
 }
 
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xinfo) {
+void repaint( XInfo &xInfo) {
 	list<Displayable *>::const_iterator begin = dList.begin();
 	list<Displayable *>::const_iterator end = dList.end();
 
-	// XClearWindow( xinfo.display, xinfo.window );
+	// XClearWindow( xInfo.display, xInfo.window );
 	
 	XWindowAttributes windowInfo;
-	XGetWindowAttributes(xinfo.display, xinfo.window, &windowInfo);
+	XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
 	unsigned int height = windowInfo.height;
 	unsigned int width = windowInfo.width;
 
-	XFillRectangle(xinfo.display, xinfo.window, xinfo.gc[0], 0, 0, width, height);
+	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
 	while( begin != end ) {
 		Displayable *d = *begin;
-		d->paint(xinfo);
+		d->paint(xInfo);
 		begin++;
 	}
-	XFlush( xinfo.display );
+	XFlush( xInfo.display );
 }
 
 
-void handleButtonPress(XInfo &xinfo, XEvent &event) {
+void handleButtonPress(XInfo &xInfo, XEvent &event) {
 	cout << "Got button press!" << endl;
-	// dList.push_front(new Text(event.xbutton.x, event.xbutton.y, "Urrp!"));
-	// repaint( dList, xinfo );
+	//dList.push_front(new Text(event.xbutton.x, event.xbutton.y, "Urrp!"));
+	//repaint( xInfo );
 	
 }
 
-void handleKeyPress(XInfo &xinfo, XEvent &event) {
+void handleKeyPress(XInfo &xInfo, XEvent &event) {
 	KeySym key;
 	char text[BufferSize];
 	
@@ -298,18 +310,18 @@ void handleKeyPress(XInfo &xinfo, XEvent &event) {
 	}
 }
 
-void handleMotion(XInfo &xinfo, XEvent &event, int inside) {
+void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
 	plane.moveto(event.xbutton.x, event.xbutton.y);	
 }
 
-void handleAnimation(XInfo &xinfo, int inside) {
-	ball.move(xinfo);
+void handleAnimation(XInfo &xInfo, int inside) {
+	building.move(xInfo);
 
 	list<Bomb *>::const_iterator begin = dBombList.begin();
 	list<Bomb *>::const_iterator end = dBombList.end();
 	while( begin != end ) {
 		Bomb *d = *begin;
-		d->move(xinfo);
+		d->move(xInfo);
 		begin++;
 	}
 
@@ -324,9 +336,9 @@ unsigned long now() {
 	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-void eventLoop(XInfo &xinfo) {
+void eventLoop(XInfo &xInfo) {
 	// Add stuff to paint to the display list
-	dList.push_front(&ball);
+	dList.push_front(&building);
 	dList.push_front(&plane);
 	
 	XEvent event;
@@ -334,17 +346,17 @@ void eventLoop(XInfo &xinfo) {
 	int inside = 0;
 
 	while( true ) {
-		if (XPending(xinfo.display) > 0) {
-			XNextEvent( xinfo.display, &event );
+		if (XPending(xInfo.display) > 0) {
+			XNextEvent( xInfo.display, &event );
 			switch( event.type ) {
 				case ButtonPress:
-					handleButtonPress(xinfo, event);
+					handleButtonPress(xInfo, event);
 					break;
 				case KeyPress:
-					handleKeyPress(xinfo, event);
+					handleKeyPress(xInfo, event);
 					break;
 				case MotionNotify:
-					handleMotion(xinfo, event, inside);
+					handleMotion(xInfo, event, inside);
 					break;
 				case EnterNotify:
 					inside = 1;
@@ -357,11 +369,11 @@ void eventLoop(XInfo &xinfo) {
 		
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
-			handleAnimation(xinfo, inside);
-			repaint(xinfo);
+			handleAnimation(xInfo, inside);
+			repaint(xInfo);
 			lastRepaint = now();
 		}
-		if (XPending(xinfo.display) == 0) {
+		if (XPending(xInfo.display) == 0) {
 			usleep(1000000/FPS - (end - lastRepaint));
 		}
 	}
@@ -380,4 +392,6 @@ int main ( int argc, char *argv[] ) {
 	initX(argc, argv, xInfo);
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
+	dList.clear();
+	dBombList.clear();
 }
