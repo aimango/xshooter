@@ -1,5 +1,6 @@
 #include <iostream>
 #include <list>
+#include <vector>
 #include <cstdlib>
 #include <sys/time.h>
 #include <math.h>
@@ -103,24 +104,34 @@ class Bomb : public Displayable {
 class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+0, y+50, 400, 400);
-		}
-		
-		void move(XInfo &xInfo) {
-			x = x - speed;
-			if (x < -100) {
-				x = 1200;
+			for (int i = 0; i < maxHoriz; i++) {
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-heights[i], 100, heights[i]);
 			}
 		}
 		
-		Building(int x, int y): x(x), y(y) {
+		void move(XInfo &xInfo) {
+			cout << x << endl;
+			x = x - speed;
+			if (x < 0) {
+				for (int i = 0 ; i < 11; i++)
+					heights.push_back( rand() % 600 + 50 );
+				maxHoriz+=12;
+			}
+		}
+		
+		Building(int x, int y): x(x), y(y), maxHoriz(0) {
 			speed = 10;
+			srand ( time(NULL) );
+			for (int i = 0 ; i < 11; i++)
+				heights.push_back( rand() % 600 + 50 );
 		}
 	
 	private:
 		int x;
 		int y;
 		int speed;
+		int maxHoriz;
+		vector<int> heights;
 };
 
 /*
@@ -145,7 +156,7 @@ class Text : public Displayable
 list<Displayable *> dList;           	// list of Displayables
 list<Bomb *> dBombList;					// list of Bombs
 Plane plane(100, 100, 50, 50);
-Building building(700, 450);
+Building building(900, 0);
 
 
 /*
@@ -188,13 +199,13 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		white );							// window background colour
 		
 	XSetStandardProperties(
-		xInfo.display,		// display containing the window
-		xInfo.window,		// window whose properties are set
-		"Plane",			// window's title
-		"Plane",			// icon's title
-		None,				// pixmap for the icon
-		argv, argc,			// applications command line args
-		&hints );			// size hints for the window
+		xInfo.display,				// display containing the window
+		xInfo.window,				// window whose properties are set
+		"Plane Attack >w<",			// window's title
+		"Plane",					// icon's title
+		None,						// pixmap for the icon
+		argv, argc,					// applications command line args
+		&hints );					// size hints for the window
 
 	/* 
 	 * Create Graphics Contexts
@@ -249,7 +260,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XMapRaised( xInfo.display, xInfo.window );
 	
 	XFlush(xInfo.display);
-	//sleep(2);	// let server get set up before sending drawing commands
+	sleep(2);	// let server get set up before sending drawing commands
 }
 
 /*
@@ -392,6 +403,24 @@ int main ( int argc, char *argv[] ) {
 	initX(argc, argv, xInfo);
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
+
+	list<Displayable *>::const_iterator begin = dList.begin();
+	list<Displayable *>::const_iterator end = dList.end();
+
+	while (begin != end) {
+		Displayable *d = *begin;
+		begin++;
+		delete d;
+	}
+
+	list<Bomb *>::const_iterator beginn = dBombList.begin();
+	list<Bomb *>::const_iterator endd = dBombList.end();
+	while (beginn != endd) {
+		Bomb *dq = *beginn;
+		beginn++;
+		delete dq;
+	}
+
 	dList.clear();
 	dBombList.clear();
 }
