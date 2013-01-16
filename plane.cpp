@@ -13,7 +13,15 @@
 #include <X11/Xutil.h>
 
 using namespace std;
- 
+
+
+// TODO:
+// object contact
+// 'catchers' on the buildings
+// keyboard acceleration
+// memory dealloc
+// game pausing
+
 const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 30;
@@ -80,6 +88,7 @@ class Plane : public Displayable {
 			else
 				x-=15;
 		}
+
 		void moveY(int dir){
 			if (dir)
 				y+=15;
@@ -87,9 +96,9 @@ class Plane : public Displayable {
 				y-=15;
 		}
 
-	// constructor
-	Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {}
-	  
+		// constructor
+		Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {}
+
 	private:
 		int x;
 		int y;
@@ -148,8 +157,7 @@ class Bomb : public Displayable {
 
 	public:
 		void paint(XInfo &xInfo) {
-			/* need to grab initial velocity of the plane */
-			//XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+20, y+10, 5, 20);
+			//TODO: need to grab initial velocity of the plane
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 10, 10, 0, 360*64);
 		}
 
@@ -192,7 +200,7 @@ class Text : public Displayable
 	  string s;
 };
 
-list<Displayable *> dList;           	// list of Displayables
+list<Displayable *> dList;				// list of Displayables
 list<Bomb *> dBombList;					// list of Bombs
 
 
@@ -206,18 +214,18 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	srand ( time(NULL) );
 
-   /*
-	* Display opening uses the DISPLAY	environment variable.
-	* It can go wrong if DISPLAY isn't set, or you don't have permission.
-	*/	
+	/*
+	 * Display opening uses the DISPLAY	environment variable.
+	 * It can go wrong if DISPLAY isn't set, or you don't have permission.
+	 */	
 	xInfo.display = XOpenDisplay( "" );
 	if ( !xInfo.display )	{
 		error( "Can't open display." );
 	}
 	
-   /*
-	* Find out some things about the display you're using.
-	*/
+	/*
+	 * Find out some things about the display you're using.
+	 */
 	xInfo.screen = DefaultScreen( xInfo.display );
 
 	white = XWhitePixel( xInfo.display, xInfo.screen );
@@ -250,10 +258,18 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	/* 
 	 * Create Graphics Contexts
 	 */
-	int i = 0;
-	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
+	for (int i = 0; i <= 2; i++){
+		xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
+		XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
+		XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
+		XSetLineAttributes(xInfo.display, xInfo.gc[i], 1, LineSolid, CapButt, JoinRound);
+	}
 
-	// use indigo 
+	/*
+	 * COLORS!
+	 */
+
+	// use midnight blue 
 	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 	XColor blue;
 	Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
@@ -261,16 +277,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[i], blue.pixel);
+	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
 
-	XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
-	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
-	XSetLineAttributes(xInfo.display, xInfo.gc[i],
-						 1, LineSolid, CapButt, JoinRound);
-
-	i = 1;
-	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
-	
 	// use hot pink 
 	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 	XColor pink;
@@ -279,20 +287,12 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[i], pink.pixel);
+	XSetForeground(xInfo.display, xInfo.gc[1], pink.pixel);
 	
-	XSetBackground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
-	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
-	XSetLineAttributes(xInfo.display, xInfo.gc[i],
-						 1, LineSolid, CapButt, JoinRound);
+	// use white
+	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
 
-	i = 2;
-	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
-	XSetForeground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
-	XSetBackground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
-	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
-	XSetLineAttributes(xInfo.display, xInfo.gc[i],
-						 1, LineSolid, CapButt, JoinRound);
+
 
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | 
@@ -300,17 +300,15 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		EnterWindowMask | LeaveWindowMask);
 
 	/* vars to make blank cursor */
-	Pixmap blank;
 	XColor dummy;
 	char data[1] = {0};
-	Cursor cursor;
 
 	/* make a blank cursor */
-	blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
+	Pixmap blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
 	if(blank == None) {
-		error("error: out of memory.");
+		error("error: out of memory. can't create blank pixmap from data");
 	}
-	cursor = XCreatePixmapCursor(xInfo.display, blank, blank, &dummy, &dummy, 0, 0);
+	Cursor cursor = XCreatePixmapCursor(xInfo.display, blank, blank, &dummy, &dummy, 0, 0);
 	XFreePixmap (xInfo.display, blank);
 
 	// set the blank cursor
@@ -343,7 +341,7 @@ void repaint( XInfo &xInfo) {
 	unsigned int height = windowInfo.height;
 	unsigned int width = windowInfo.width;
 
-	//re draws the backgound
+	//re-draws the backgound
 	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
 	while( begin != end ) {
 		Displayable *d = *begin;
@@ -358,7 +356,6 @@ void handleButtonPress(XInfo &xInfo, XEvent &event) {
 	cout << "Got button press!" << endl;
 	//dList.push_front(new Text(event.xbutton.x, event.xbutton.y, "Urrp!"));
 	//repaint( xInfo );
-	
 }
 
 void handleKeyPress(XInfo &xInfo, XEvent &event) {
