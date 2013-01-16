@@ -33,8 +33,8 @@ struct XInfo {
  * Function to put out a message on error exits.
  */
 void error( string str ) {
-  cerr << str << endl;
-  exit(0);
+	cerr << str << endl;
+	exit(0);
 }
 
 
@@ -60,10 +60,6 @@ class Plane : public Displayable {
 					{x-30, y-15}
 				};
 			int npoints = sizeof(points)/sizeof(XPoint);
-
-			/* draw a small triangle at the top-left corner of the window. */
-			/* the triangle is made of a set of consecutive lines, whose   */
-			/* end-point pixels are specified in the 'points' array.       */
 			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width, height, 0, 360*64);
@@ -78,10 +74,19 @@ class Plane : public Displayable {
 			return y;
 		}
 	  
-		void moveto(int newX, int newY) {
-			x = newX;
-			y = newY;
+		void moveX(int dir) {
+			if (dir)
+				x+=15;
+			else
+				x-=15;
 		}
+		void moveY(int dir){
+			if (dir)
+				y+=15;
+			else 
+				y-=15;
+		}
+
 	// constructor
 	Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {}
 	  
@@ -95,7 +100,6 @@ class Plane : public Displayable {
 class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
-			srand ( time(NULL) );
 			for (int i = 0; i < 100; i++) {
 				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-heights[i], 100, heights[i]);
 			}
@@ -199,6 +203,8 @@ list<Bomb *> dBombList;					// list of Bombs
 void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSizeHints hints;
 	unsigned long white, black;
+
+	srand ( time(NULL) );
 
    /*
 	* Display opening uses the DISPLAY	environment variable.
@@ -371,19 +377,40 @@ void handleKeyPress(XInfo &xInfo, XEvent &event) {
 		NULL );					// pointer to a composeStatus structure (unused)
 	if ( i == 1) {
 		printf("Got key press -- %c\n", text[0]);
-		if (text[0] == 'q') {
-			error("Terminating normally.");
-		}
-		else if (text[0] == 'm') {
-			Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-			dList.push_front(bomb);
-			dBombList.push_front(bomb);
+		switch (text[0]){
+			case 'q':
+				error("Terminating normally.");
+				break;
+			case 'm': {
+				Bomb *bomb = new Bomb(plane.getX(), plane.getY());
+				dList.push_front(bomb);
+				dBombList.push_front(bomb);
+				break;
+			}
+			case 'w': {
+				plane.moveY(0);
+				break;
+			}
+			case 'a': {
+				plane.moveX(0);
+				break;
+			}
+			case 's': {
+				plane.moveY(1);
+				break;
+			}
+			case 'd': {
+				plane.moveX(1);
+				break;
+			}
+			default:
+				break;
 		}
 	}
 }
 
 void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
-	plane.moveto(event.xbutton.x, event.xbutton.y);	
+	//plane.moveto(event.xbutton.x, event.xbutton.y);	
 }
 
 void handleAnimation(XInfo &xInfo, int inside) {
