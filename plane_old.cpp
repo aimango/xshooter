@@ -25,7 +25,7 @@ struct XInfo {
 	Display	 *display;
 	int		 screen;
 	Window	 window;
-	GC		 gc[2];
+	GC		 gc[3];
 };
 
 
@@ -49,48 +49,25 @@ class Displayable {
 class Plane : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
-
-			// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
-			XColor blue;
-			Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-			Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "blue", &blue, &blue);
-			if (rc == 0) {
-				error("XAllocNamedColor - failed to allocated 'blue' color.");
-			}
-
-			// XPoint points[] = {
-			// 	{x+0, x+0},
-			// 	{x+15, x+15},
-			// 	{x+0, x+15},
-			// 	{x+0, x+0}
-			// };
-			// int npoints = sizeof(points)/sizeof(XPoint);
-			// XDrawLines(xInfo.display, xInfo.window, xInfo.gc[1], points, npoints, CoordModeOrigin);
 			/* draw a small triangle at the top-left corner of the window. */
 			/* the triangle is made of a set of consecutive lines, whose   */
 			/* end-point pixels are specified in the 'points' array.       */
 			/* draw the triangle in a yellow color. */
-			XSetForeground(xInfo.display, xInfo.gc[1], blue.pixel);
-			
+			XPoint points[] = {
+					{x-30, y-15},
+					{x+0, y+30},
+					{x-30, y-15},
+					{x-30, y-15}
+				};
+			int npoints = sizeof(points)/sizeof(XPoint);
 
-			{
-				XPoint points[] = {
-						{x-30, y-15},
-						{x+0, y+30},
-						{x-30, y-15},
-						{x-30, y-15}
-					};
-				int npoints = sizeof(points)/sizeof(XPoint);
+			/* draw a small triangle at the top-left corner of the window. */
+			/* the triangle is made of a set of consecutive lines, whose   */
+			/* end-point pixels are specified in the 'points' array.       */
+			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
-				/* draw a small triangle at the top-left corner of the window. */
-				/* the triangle is made of a set of consecutive lines, whose   */
-				/* end-point pixels are specified in the 'points' array.       */
-				XDrawLines(xInfo.display, xInfo.window, xInfo.gc[1], points, npoints, CoordModeOrigin);
-			}
-
-			
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, width, height, 0, 360*64);
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x-15, y+10, 30, 10);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width, height, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30, 10);
 		}
 
 		int getX() {
@@ -119,22 +96,25 @@ class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
 			srand ( time(NULL) );
-			for (int i = 0; i < 12; i++) {
-				int height = rand() % 600 + 50;
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-height, 100, height);
-				heights.push_back(height);
+			for (int i = 0; i < 100; i++) {
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-heights[i], 100, heights[i]);
 			}
 		}
 
 		void move(XInfo &xInfo) {
 			x = x - speed;
-			if (x < 0) {
-				x = 1200;
-			}
+
 		}
 
 		Building(int x, int y): x(x), y(y) {
 			speed = 10;
+			for (int i = 0 ; i < 100; i++) {
+				int person = rand()%4;
+				if (person == 1) {
+
+				}
+				heights.push_back( rand() % 600 + 50 );
+			}
 		}
 
 		int getX() {
@@ -166,7 +146,7 @@ class Bomb : public Displayable {
 		void paint(XInfo &xInfo) {
 			/* need to grab initial velocity of the plane */
 			//XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+20, y+10, 5, 20);
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[1], x, y, 10, 10, 0, 360*64);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 10, 10, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
@@ -250,7 +230,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		hints.width, hints.height,			// size of the window
 		Border,								// width of window's border
 		black,								// window border colour
-		white );							// window background colour
+		black );							// window background colour
 		
 	XSetStandardProperties(
 		xInfo.display,		// display containing the window
@@ -266,21 +246,47 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	 */
 	int i = 0;
 	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
-	XSetForeground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
+
+	// use indigo 
+	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+	XColor blue;
+	Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
+	if (rc == 0) {
+		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
+	}
+	XSetForeground(xInfo.display, xInfo.gc[i], blue.pixel);
+
 	XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
 	XSetLineAttributes(xInfo.display, xInfo.gc[i],
 						 1, LineSolid, CapButt, JoinRound);
 
-	// Reverse Video
 	i = 1;
+	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
+	
+	// use hot pink 
+	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+	XColor pink;
+	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &pink, &pink);
+	if (rc == 0) {
+		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
+	}
+	XSetForeground(xInfo.display, xInfo.gc[i], pink.pixel);
+	
+	XSetBackground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
+	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
+	XSetLineAttributes(xInfo.display, xInfo.gc[i],
+						 1, LineSolid, CapButt, JoinRound);
+
+	i = 2;
 	xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
 	XSetForeground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 	XSetBackground(xInfo.display, xInfo.gc[i], BlackPixel(xInfo.display, xInfo.screen));
 	XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
 	XSetLineAttributes(xInfo.display, xInfo.gc[i],
 						 1, LineSolid, CapButt, JoinRound);
-
 
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | 
@@ -324,13 +330,14 @@ void repaint( XInfo &xInfo) {
 	list<Displayable *>::const_iterator begin = dList.begin();
 	list<Displayable *>::const_iterator end = dList.end();
 
-	// XClearWindow( xInfo.display, xInfo.window );
+	//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
 	
 	XWindowAttributes windowInfo;
 	XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
 	unsigned int height = windowInfo.height;
 	unsigned int width = windowInfo.width;
 
+	//re draws the backgound
 	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
 	while( begin != end ) {
 		Displayable *d = *begin;
@@ -458,22 +465,22 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-	list<Displayable *>::const_iterator begin = dList.begin();
-	list<Displayable *>::const_iterator end = dList.end();
+	// list<Displayable *>::const_iterator begin = dList.begin();
+	// list<Displayable *>::const_iterator end = dList.end();
 
-	while (begin != end) {
-		Displayable *d = *begin;
-		begin++;
-		delete d;
-	}
+	// while (begin != end) {
+	// 	Displayable *d = *begin;
+	// 	begin++;
+	// 	delete d;
+	// }
 
-	list<Bomb *>::const_iterator beginn = dBombList.begin();
-	list<Bomb *>::const_iterator endd = dBombList.end();
-	while (beginn != endd) {
-		Bomb *dq = *beginn;
-		beginn++;
-		delete dq;
-	}
+	// list<Bomb *>::const_iterator beginn = dBombList.begin();
+	// list<Bomb *>::const_iterator endd = dBombList.end();
+	// while (beginn != endd) {
+	// 	Bomb *dq = *beginn;
+	// 	beginn++;
+	// 	delete dq;
+	// }
 
 	dList.clear();
 	dBombList.clear();

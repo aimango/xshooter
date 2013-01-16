@@ -130,7 +130,7 @@ class Building : public Displayable {
 			// 	x+=1200;
 			// }
 		}
-		
+
 		Building(int x, int y): x(x), y(y), maxHoriz(0) {
 			speed = 100;
 			srand ( time(NULL) );
@@ -197,7 +197,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	hints.x = 100;
 	hints.y = 100;
-	hints.width = 1000;
+	hints.width = 1200;
 	hints.height = 800;
 	hints.flags = PPosition | PSize;
 
