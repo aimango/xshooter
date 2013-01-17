@@ -18,9 +18,10 @@ using namespace std;
 // TODO:
 // object contact
 // 'catchers' on the buildings
-// keyboard acceleration
+// keyboard acceleration - doneish
 // memory dealloc
-// game pausing
+// game pausing - starting it..
+
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -63,8 +64,20 @@ class Plane : public Displayable {
 			/* end-point pixels are specified in the 'points' array.       */
 			/* draw the triangle in a yellow color. */
 			// TODO not sure how to set thickness of lines
+
 			x += velocityX;
+			if (x < 0) {
+				x = 0;
+			} else if (x > windowWidth) {
+				x = windowWidth;
+			}
+
 			y += velocityY;
+			if (y < 0) {
+				y = 0;
+			} else if (y > windowHeight) {
+				y = windowHeight;
+			}
 
 			XPoint points[] = {
 					{x-30, y-15},
@@ -406,21 +419,21 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 	int isRetriggered = 0;
 
 	if (XEventsQueued(xInfo.display, QueuedAfterReading)) {
-		XEvent nev;
-		XPeekEvent(xInfo.display, &nev);
+		XEvent peekEvent;
+		XPeekEvent(xInfo.display, &peekEvent);
 
-		if (nev.type == KeyPress && nev.xkey.time == event.xkey.time &&
-			nev.xkey.keycode == event.xkey.keycode){ 
+		if (peekEvent.type == KeyPress && peekEvent.xkey.time == event.xkey.time &&
+			peekEvent.xkey.keycode == event.xkey.keycode){ 
 
-			// delete retriggered KeyPress event
-			cout << "key was retriggered" << endl;
+			// remove retriggered KeyPress event
+			// cout << "key was retriggered" << endl;
 			XNextEvent (xInfo.display, &event);
 			isRetriggered = 1;
 		}
 	}
 
 	if (!isRetriggered) {
-		cout << "Key was released" << endl;
+		// cout << "Key was released" << endl;
 
 		KeySym key;
 		char text[BufferSize];
@@ -432,7 +445,7 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 			&key, 					// workstation-independent key symbol
 			NULL );					// pointer to a composeStatus structure (unused)
 		if ( i == 1) {
-			printf("Got key release -- %c\n", text[0]);
+			// printf("Got key release -- %c\n", text[0]);
 			switch (text[0]){
 				case 'w': {
 					plane.setVelocityY(1);
@@ -466,7 +479,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event) {
 		&key, 					// workstation-independent key symbol
 		NULL );					// pointer to a composeStatus structure (unused)
 	if ( i == 1) {
-		printf("Got key press -- %c\n", text[0]);
+		// printf("Got key press -- %c\n", text[0]);
 		switch (text[0]){
 			case 'q':
 				error("Terminating normally.");
