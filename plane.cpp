@@ -25,7 +25,8 @@ using namespace std;
 const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 30;
-
+const int windowHeight = 600;
+const int windowWidth = 800;
 /*
  * Information to draw on the window.
  */
@@ -61,6 +62,10 @@ class Plane : public Displayable {
 			/* the triangle is made of a set of consecutive lines, whose   */
 			/* end-point pixels are specified in the 'points' array.       */
 			/* draw the triangle in a yellow color. */
+			// TODO not sure how to set thickness of lines
+			x += velocityX;
+			y += velocityY;
+
 			XPoint points[] = {
 					{x-30, y-15},
 					{x+0, y+30},
@@ -81,36 +86,68 @@ class Plane : public Displayable {
 		int getY() {
 			return y;
 		}
-	  
-		void moveX(int dir) {
-			if (dir)
-				x+=15;
-			else
-				x-=15;
+
+		int getVelocityX() {
+			return velocityX;
 		}
 
-		void moveY(int dir){
-			if (dir)
-				y+=15;
-			else 
-				y-=15;
+		int getVelocityY() {
+			return velocityY;
 		}
+
+		void setVelocityX(int dir) {
+			if (dir) {
+				velocityX += 15;
+			}
+			else {
+				velocityX -= 15;
+			}
+		}
+
+		void setVelocityY(int dir) {
+			if (dir) {
+				velocityY += 15;
+			}
+			else {
+				velocityY -= 15;
+			}
+		}
+
+		// void moveX(int dir) {
+		// 	if (dir)
+		// 		x+=15;f
+		// 	else
+		// 		x-=15;
+		// }
+
+		// void moveY(int dir){
+		// 	if (dir)
+		// 		y+=15;
+		// 	else 
+		// 		y-=15;
+		// }
+
 
 		// constructor
-		Plane(int x, int y, int width, int height):x(x), y(y), width(width), height(height)  {}
+		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
+			velocityX = 0;
+			velocityY = 0;
+		}
 
 	private:
 		int x;
 		int y;
 		int width;
 		int height;
+		int velocityX;
+		int velocityY;
 };
 
 class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
-			for (int i = 0; i < 100; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*100, y+800-heights[i], 100, heights[i]);
+			for (int i = 0; i < 150; i++) {
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+windowHeight-heights[i], 50, heights[i]);
 			}
 		}
 
@@ -126,7 +163,7 @@ class Building : public Displayable {
 				if (person == 1) {
 
 				}
-				heights.push_back( rand() % 600 + 50 );
+				heights.push_back( rand() % 400 + 50 );
 			}
 		}
 
@@ -150,7 +187,7 @@ class Building : public Displayable {
 };
 
 Plane plane(100, 100, 30, 30);
-Building building(700, 0);
+Building building(windowHeight, 0);
 
 
 class Bomb : public Displayable {
@@ -164,8 +201,8 @@ class Bomb : public Displayable {
 		void move(XInfo &xInfo) {
 			y = y + speed;
 			x = x - speed;
-			if (y > building.getY()+800-building.getHeights().at(0))
-				cout << "hit " << 800-building.getHeights().at(0) << endl;
+			if (y > building.getY()+windowHeight-building.getHeights().at(0))
+				cout << "hit " << windowHeight-building.getHeights().at(0) << endl;
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
@@ -233,8 +270,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	hints.x = 100;
 	hints.y = 100;
-	hints.width = 1000;
-	hints.height = 800;
+	hints.width = windowWidth;
+	hints.height = windowHeight;
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow( 
@@ -296,8 +333,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | 
-		PointerMotionMask | 
-		EnterWindowMask | LeaveWindowMask);
+		PointerMotionMask | KeyReleaseMask |
+		EnterWindowMask | LeaveWindowMask | ExposureMask);
 
 	/* vars to make blank cursor */
 	XColor dummy;
@@ -330,25 +367,29 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xInfo) {
-	list<Displayable *>::const_iterator begin = dList.begin();
-	list<Displayable *>::const_iterator end = dList.end();
+void repaint( XInfo &xInfo, int inside) {
+	if (inside) {
+		list<Displayable *>::const_iterator begin = dList.begin();
+		list<Displayable *>::const_iterator end = dList.end();
 
-	//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
-	
-	XWindowAttributes windowInfo;
-	XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
-	unsigned int height = windowInfo.height;
-	unsigned int width = windowInfo.width;
+		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
+		
+		XWindowAttributes windowInfo;
+		XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
+		unsigned int height = windowInfo.height;
+		unsigned int width = windowInfo.width;
 
-	//re-draws the backgound
-	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
-	while( begin != end ) {
-		Displayable *d = *begin;
-		d->paint(xInfo);
-		begin++;
+		//re-draws the backgound
+		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
+		while( begin != end ) {
+			Displayable *d = *begin;
+			d->paint(xInfo);
+			begin++;
+		}
+		XFlush( xInfo.display );
+	} else { 
+
 	}
-	XFlush( xInfo.display );
 }
 
 
@@ -358,14 +399,43 @@ void handleButtonPress(XInfo &xInfo, XEvent &event) {
 	//repaint( xInfo );
 }
 
+void handleKeyRelease(XInfo &xInfo, XEvent &event) {
+	KeySym key;
+	char text[BufferSize];
+
+	int i = XLookupString( 
+		(XKeyEvent *)&event, 	// the keyboard event
+		text, 					// buffer when text will be written
+		BufferSize, 			// size of the text buffer
+		&key, 					// workstation-independent key symbol
+		NULL );					// pointer to a composeStatus structure (unused)
+	if ( i == 1) {
+		printf("Got key release -- %c\n", text[0]);
+		switch (text[0]){
+			case 'w': {
+				plane.setVelocityY(1);
+				break;
+			}
+			case 'a': {
+				plane.setVelocityX(1);
+				break;
+			}
+			case 's': {
+				plane.setVelocityY(0);
+				break;
+			}
+			case 'd': {
+				plane.setVelocityX(0);
+				break;
+			}
+		}
+	}
+}
+
 void handleKeyPress(XInfo &xInfo, XEvent &event) {
 	KeySym key;
 	char text[BufferSize];
 	
-	/*
-	 * Exit when 'q' is typed.
-	 * This is a simplified approach that does NOT use localization.
-	 */
 	int i = XLookupString( 
 		(XKeyEvent *)&event, 	// the keyboard event
 		text, 					// buffer when text will be written
@@ -385,23 +455,21 @@ void handleKeyPress(XInfo &xInfo, XEvent &event) {
 				break;
 			}
 			case 'w': {
-				plane.moveY(0);
+				plane.setVelocityY(0);
 				break;
 			}
 			case 'a': {
-				plane.moveX(0);
+				plane.setVelocityX(0);
 				break;
 			}
 			case 's': {
-				plane.moveY(1);
+				plane.setVelocityY(1);
 				break;
 			}
 			case 'd': {
-				plane.moveX(1);
+				plane.setVelocityX(1);
 				break;
 			}
-			default:
-				break;
 		}
 	}
 }
@@ -424,6 +492,16 @@ void handleAnimation(XInfo &xInfo, int inside) {
 	if (!inside) {
 		// pause the game?
 	}
+}
+
+void handleResizing(XInfo &xInfo){
+	XWindowAttributes windowAttr;
+	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
+	int newHeight = windowAttr.height;
+	int newWidth = windowAttr.width;
+	cout << newHeight << " " << newWidth << endl;
+
+
 }
 
 unsigned long now() { // change this timer ...
@@ -451,6 +529,10 @@ void eventLoop(XInfo &xInfo) {
 				case KeyPress:
 					handleKeyPress(xInfo, event);
 					break;
+				case KeyRelease:
+
+					handleKeyRelease(xInfo, event);
+					break;
 				case MotionNotify:
 					handleMotion(xInfo, event, inside);
 					break;
@@ -460,13 +542,17 @@ void eventLoop(XInfo &xInfo) {
 				case LeaveNotify:
 					inside = 0;
 					break;
+				case Expose:
+					cout << "resizing" << endl;
+					handleResizing(xInfo);
+					break;
 			}
 		}
 		
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
 			handleAnimation(xInfo, inside);
-			repaint(xInfo);
+			repaint(xInfo, inside);
 			lastRepaint = now();
 		}
 		if (XPending(xInfo.display) == 0) {
