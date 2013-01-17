@@ -12,13 +12,6 @@
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
-/**
- * My header files
- */
-#include "bomb.h"
-#include "plane.h"
-#include "building.h"
-
 using namespace std;
 
 
@@ -62,9 +55,166 @@ class Displayable {
 		virtual void paint(XInfo &xInfo) = 0;
 };
 
+class Plane : public Displayable {
+	public:
+		virtual void paint(XInfo &xInfo) {
+			/* draw a small triangle at the top-left corner of the window. */
+			/* the triangle is made of a set of consecutive lines, whose   */
+			/* end-point pixels are specified in the 'points' array.       */
+			/* draw the triangle in a yellow color. */
+			// TODO not sure how to set thickness of lines
+			x += velocityX;
+			y += velocityY;
+
+			XPoint points[] = {
+					{x-30, y-15},
+					{x+0, y+30},
+					{x-30, y-15},
+					{x-30, y-15}
+				};
+			int npoints = sizeof(points)/sizeof(XPoint);
+			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
+
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width, height, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30, 10);
+		}
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		int getVelocityX() {
+			return velocityX;
+		}
+
+		int getVelocityY() {
+			return velocityY;
+		}
+
+		void setVelocityX(int dir) {
+			if (dir) {
+				velocityX += 15;
+			}
+			else {
+				velocityX -= 15;
+			}
+		}
+
+		void setVelocityY(int dir) {
+			if (dir) {
+				velocityY += 15;
+			}
+			else {
+				velocityY -= 15;
+			}
+		}
+
+		// void moveX(int dir) {
+		// 	if (dir)
+		// 		x+=15;f
+		// 	else
+		// 		x-=15;
+		// }
+
+		// void moveY(int dir){
+		// 	if (dir)
+		// 		y+=15;
+		// 	else 
+		// 		y-=15;
+		// }
+
+
+		// constructor
+		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
+			velocityX = 0;
+			velocityY = 0;
+		}
+
+	private:
+		int x;
+		int y;
+		int width;
+		int height;
+		int velocityX;
+		int velocityY;
+};
+
+class Building : public Displayable {
+	public:
+		virtual void paint(XInfo &xInfo) {
+			for (int i = 0; i < 150; i++) {
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+windowHeight-heights[i], 50, heights[i]);
+			}
+		}
+
+		void move(XInfo &xInfo) {
+			x = x - speed;
+
+		}
+
+		Building(int x, int y): x(x), y(y) {
+			speed = 10;
+			for (int i = 0 ; i < 100; i++) {
+				int person = rand()%4;
+				if (person == 1) {
+
+				}
+				heights.push_back( rand() % 400 + 50 );
+			}
+		}
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		vector<int> getHeights() {
+			return heights;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+		vector<int> heights;
+};
 
 Plane plane(100, 100, 30, 30);
 Building building(windowHeight, 0);
+
+
+class Bomb : public Displayable {
+
+	public:
+		void paint(XInfo &xInfo) {
+			//TODO: need to grab initial velocity of the plane
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 10, 10, 0, 360*64);
+		}
+
+		void move(XInfo &xInfo) {
+			y = y + speed;
+			x = x - speed;
+			if (y > building.getY()+windowHeight-building.getHeights().at(0))
+				cout << "hit " << windowHeight-building.getHeights().at(0) << endl;
+		}
+
+		Bomb(int x, int y): x(x), y(y) {
+			speed = 5;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+
+};
 
 
 
@@ -250,33 +400,56 @@ void handleButtonPress(XInfo &xInfo, XEvent &event) {
 }
 
 void handleKeyRelease(XInfo &xInfo, XEvent &event) {
-	KeySym key;
-	char text[BufferSize];
+	
+	// deleting auto-repeated keypress events:
+	// from http://stackoverflow.com/questions/2100654/ignore-auto-repeat-in-x11-applications
+	int isRetriggered = 0;
 
-	int i = XLookupString( 
-		(XKeyEvent *)&event, 	// the keyboard event
-		text, 					// buffer when text will be written
-		BufferSize, 			// size of the text buffer
-		&key, 					// workstation-independent key symbol
-		NULL );					// pointer to a composeStatus structure (unused)
-	if ( i == 1) {
-		printf("Got key release -- %c\n", text[0]);
-		switch (text[0]){
-			case 'w': {
-				plane.setVelocityY(1);
-				break;
-			}
-			case 'a': {
-				plane.setVelocityX(1);
-				break;
-			}
-			case 's': {
-				plane.setVelocityY(0);
-				break;
-			}
-			case 'd': {
-				plane.setVelocityX(0);
-				break;
+	if (XEventsQueued(xInfo.display, QueuedAfterReading)) {
+		XEvent nev;
+		XPeekEvent(xInfo.display, &nev);
+
+		if (nev.type == KeyPress && nev.xkey.time == event.xkey.time &&
+			nev.xkey.keycode == event.xkey.keycode){ 
+
+			// delete retriggered KeyPress event
+			cout << "key was retriggered" << endl;
+			XNextEvent (xInfo.display, &event);
+			isRetriggered = 1;
+		}
+	}
+
+	if (!isRetriggered) {
+		cout << "Key was released" << endl;
+
+		KeySym key;
+		char text[BufferSize];
+
+		int i = XLookupString( 
+			(XKeyEvent *)&event, 	// the keyboard event
+			text, 					// buffer when text will be written
+			BufferSize, 			// size of the text buffer
+			&key, 					// workstation-independent key symbol
+			NULL );					// pointer to a composeStatus structure (unused)
+		if ( i == 1) {
+			printf("Got key release -- %c\n", text[0]);
+			switch (text[0]){
+				case 'w': {
+					plane.setVelocityY(1);
+					break;
+				}
+				case 'a': {
+					plane.setVelocityX(1);
+					break;
+				}
+				case 's': {
+					plane.setVelocityY(0);
+					break;
+				}
+				case 'd': {
+					plane.setVelocityX(0);
+					break;
+				}
 			}
 		}
 	}
@@ -380,7 +553,6 @@ void eventLoop(XInfo &xInfo) {
 					handleKeyPress(xInfo, event);
 					break;
 				case KeyRelease:
-
 					handleKeyRelease(xInfo, event);
 					break;
 				case MotionNotify:
