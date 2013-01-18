@@ -1,6 +1,7 @@
 #include <iostream>
 #include <list>
 #include <vector>
+#include <cstring>
 #include <cstdlib>
 #include <sys/time.h>
 #include <math.h>
@@ -21,21 +22,22 @@ using namespace std;
 // keyboard acceleration - doneish
 // memory dealloc
 // game pausing - starting it..
-
+// splash screen
 
 const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 30;
-const int windowHeight = 600;
-const int windowWidth = 800;
 /*
  * Information to draw on the window.
  */
 struct XInfo {
+	int height;
+	int width;
 	Display	 *display;
 	int		 screen;
 	Window	 window;
 	GC		 gc[3];
+	XFontStruct *font;
 };
 
 
@@ -68,15 +70,15 @@ class Plane : public Displayable {
 			x += velocityX;
 			if (x < 0) {
 				x = 0;
-			} else if (x > windowWidth) {
-				x = windowWidth;
+			} else if (x > xInfo.width) {
+				x = xInfo.width;
 			}
 
 			y += velocityY;
 			if (y < 0) {
 				y = 0;
-			} else if (y > windowHeight) {
-				y = windowHeight;
+			} else if (y > xInfo.height) {
+				y = xInfo.height;
 			}
 
 			XPoint points[] = {
@@ -160,7 +162,7 @@ class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
 			for (int i = 0; i < 150; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+windowHeight-heights[i], 50, heights[i]);
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+xInfo.height-heights[i], 50, heights[i]);
 			}
 		}
 
@@ -200,7 +202,7 @@ class Building : public Displayable {
 };
 
 Plane plane(100, 100, 30, 30);
-Building building(windowHeight, 0);
+Building building(600, 0); //xInfo.height
 
 
 class Bomb : public Displayable {
@@ -214,8 +216,8 @@ class Bomb : public Displayable {
 		void move(XInfo &xInfo) {
 			y = y + speed;
 			x = x - speed;
-			if (y > building.getY()+windowHeight-building.getHeights().at(0))
-				cout << "hit " << windowHeight-building.getHeights().at(0) << endl;
+			if (y > building.getY()+xInfo.height-building.getHeights().at(0))
+				cout << "hit " << xInfo.height-building.getHeights().at(0) << endl;
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
@@ -254,8 +256,36 @@ list<Displayable *> dList;				// list of Displayables
 list<Bomb *> dBombList;					// list of Bombs
 
 
+/** 
+ * Set up colors
+ */ 
+void setGCColors(XInfo &xInfo) {
 
-/*
+	// use midnight blue 
+	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+	XColor blue;
+	Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
+	if (rc == 0) {
+		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
+	}
+	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
+
+	// use hot pink 
+	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+	XColor pink;
+	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &pink, &pink);
+	if (rc == 0) {
+		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
+	}
+	XSetForeground(xInfo.display, xInfo.gc[1], pink.pixel);
+	
+	// use white
+	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
+}
+
+ /*
  * Initialize X and create a window
  */
 void initX(int argc, char *argv[], XInfo &xInfo) {
@@ -273,6 +303,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		error( "Can't open display." );
 	}
 	
+	xInfo.width = 800;
+	xInfo.height = 600;
 	/*
 	 * Find out some things about the display you're using.
 	 */
@@ -283,8 +315,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	hints.x = 100;
 	hints.y = 100;
-	hints.width = windowWidth;
-	hints.height = windowHeight;
+	hints.width = xInfo.width;
+	hints.height = xInfo.height;
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow( 
@@ -315,39 +347,15 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		XSetLineAttributes(xInfo.display, xInfo.gc[i], 1, LineSolid, CapButt, JoinRound);
 	}
 
-	/*
-	 * COLORS!
-	 */
-
-	// use midnight blue 
-	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
-	XColor blue;
-	Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
-	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
-	}
-	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
-
-	// use hot pink 
-	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
-	XColor pink;
-	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &pink, &pink);
-	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
-	}
-	XSetForeground(xInfo.display, xInfo.gc[1], pink.pixel);
-	
-	// use white
-	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
+	setGCColors(xInfo);
 
 
-
+	// masks
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | 
 		PointerMotionMask | KeyReleaseMask |
 		EnterWindowMask | LeaveWindowMask | ExposureMask);
+
 
 	/* vars to make blank cursor */
 	XColor dummy;
@@ -380,8 +388,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xInfo, int inside) {
-	if (inside) {
+void repaint( XInfo &xInfo, int splash) {
+	if (!splash) {
 		list<Displayable *>::const_iterator begin = dList.begin();
 		list<Displayable *>::const_iterator end = dList.end();
 
@@ -400,16 +408,40 @@ void repaint( XInfo &xInfo, int inside) {
 			begin++;
 		}
 		XFlush( xInfo.display );
-	} else { 
+	} else {
 
+		//http://www.lemoda.net/c/xlib-text-box/index.html
+
+		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
+		string lineTwo = "Press c to begin.";
+
+		int x;
+		int y;
+		int direction;
+		int ascent;
+		int descent;
+		XCharStruct overall;
+
+		// Centre the text
+	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
+	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
+	
+		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
+		              &direction, &ascent, &descent, &overall);
+		x = (xInfo.width - overall.width) / 2;
+		y = xInfo.height / 2 + (ascent - descent) / 2;
+
+		XClearWindow (xInfo.display, xInfo.window);
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y, lineOne.c_str(), lineOne.length());
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y+20, lineTwo.c_str(), lineTwo.length());
 	}
 }
 
 
 void handleButtonPress(XInfo &xInfo, XEvent &event) {
 	cout << "Got button press!" << endl;
-	//dList.push_front(new Text(event.xbutton.x, event.xbutton.y, "Urrp!"));
-	//repaint( xInfo );
 }
 
 void handleKeyRelease(XInfo &xInfo, XEvent &event) {
@@ -468,7 +500,7 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 	}
 }
 
-void handleKeyPress(XInfo &xInfo, XEvent &event) {
+void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 	KeySym key;
 	char text[BufferSize];
 	
@@ -506,6 +538,10 @@ void handleKeyPress(XInfo &xInfo, XEvent &event) {
 				plane.setVelocityX(1);
 				break;
 			}
+			case 'c': {
+				splash = 0;
+				break;
+			}
 		}
 	}
 }
@@ -523,10 +559,6 @@ void handleAnimation(XInfo &xInfo, int inside) {
 		Bomb *d = *begin;
 		d->move(xInfo);
 		begin++;
-	}
-
-	if (!inside) {
-		// pause the game?
 	}
 }
 
@@ -554,8 +586,8 @@ void eventLoop(XInfo &xInfo) {
 	XEvent event;
 	unsigned long lastRepaint = 0;
 	int inside = 0;
-
-	while( true ) {
+	int splash = 1;
+	while(true) {
 		if (XPending(xInfo.display) > 0) {
 			XNextEvent( xInfo.display, &event );
 			switch( event.type ) {
@@ -563,7 +595,7 @@ void eventLoop(XInfo &xInfo) {
 					handleButtonPress(xInfo, event);
 					break;
 				case KeyPress:
-					handleKeyPress(xInfo, event);
+					handleKeyPress(xInfo, event, splash);
 					break;
 				case KeyRelease:
 					handleKeyRelease(xInfo, event);
@@ -587,7 +619,7 @@ void eventLoop(XInfo &xInfo) {
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
 			handleAnimation(xInfo, inside);
-			repaint(xInfo, inside);
+			repaint(xInfo, splash);
 			lastRepaint = now();
 		}
 		if (XPending(xInfo.display) == 0) {
