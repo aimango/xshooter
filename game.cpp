@@ -17,12 +17,13 @@ using namespace std;
 
 
 // TODO:
-// object contact
+// collision detection
 // 'catchers' on the buildings
 // keyboard acceleration - doneish
 // memory dealloc
-// game pausing - starting it..
-// splash screen
+// game pausing - done ish
+// splash screen - need to fig out how to increase font
+// need better MVC structure
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -385,6 +386,32 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	sleep(2);	// let server get set up before sending drawing commands
 }
 
+void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
+		//http://www.lemoda.net/c/xlib-text-box/index.html
+
+		int x;
+		int y;
+		int direction;
+		int ascent;
+		int descent;
+		XCharStruct overall;
+
+		// Centre the text
+	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
+	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
+	
+		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
+		              &direction, &ascent, &descent, &overall);
+		x = (xInfo.width - overall.width) / 2;
+		y = xInfo.height / 2 + (ascent - descent) / 2;
+
+		XClearWindow (xInfo.display, xInfo.window);
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y, lineOne.c_str(), lineOne.length());
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y+20, lineTwo.c_str(), lineTwo.length());
+}
+
 /*
  * Function to repaint a display list
  */
@@ -409,36 +436,11 @@ void repaint( XInfo &xInfo, int splash) {
 		}
 		XFlush( xInfo.display );
 	} else {
-
-		//http://www.lemoda.net/c/xlib-text-box/index.html
-
 		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
-		string lineTwo = "Press c to begin.";
-
-		int x;
-		int y;
-		int direction;
-		int ascent;
-		int descent;
-		XCharStruct overall;
-
-		// Centre the text
-	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
-	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
-	
-		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
-		              &direction, &ascent, &descent, &overall);
-		x = (xInfo.width - overall.width) / 2;
-		y = xInfo.height / 2 + (ascent - descent) / 2;
-
-		XClearWindow (xInfo.display, xInfo.window);
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y, lineOne.c_str(), lineOne.length());
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y+20, lineTwo.c_str(), lineTwo.length());
+		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
+		drawText(xInfo, lineOne, lineTwo);
 	}
 }
-
 
 void handleButtonPress(XInfo &xInfo, XEvent &event) {
 	cout << "Got button press!" << endl;
@@ -540,6 +542,10 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 			}
 			case 'c': {
 				splash = 0;
+				break;
+			}
+			case 'f': case 'F': {
+				splash = 1;
 				break;
 			}
 		}
