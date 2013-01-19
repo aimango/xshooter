@@ -41,6 +41,12 @@ struct XInfo {
 	XFontStruct *font;
 };
 
+void setResizeVars(XInfo &xInfo) {
+	XWindowAttributes windowAttr;
+	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
+	xInfo.height = windowAttr.height;
+	xInfo.width = windowAttr.width;
+}
 
 /*
  * Function to put out a message on error exits.
@@ -97,8 +103,8 @@ class Plane : public Displayable {
 			int npoints = sizeof(points)/sizeof(XPoint);
 			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width, height, 0, 360*64);
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30, 10);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width*xInfo.width/800, height*xInfo.height/600, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30*xInfo.width/800, 10*xInfo.height/600);
 		}
 
 		int getX() {
@@ -154,11 +160,13 @@ class Catcher : public Displayable {
 
 	public:
 		void paint(XInfo &xInfo) {
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], x+10, xInfo.height-y-15, 30, 30, 0, 360*64);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
+				x*xInfo.width/800+10, xInfo.height-y*xInfo.height/600-15, 
+				30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed;
+			x -= speed *xInfo.width/800;
 		}
 
 		int getX() {
@@ -192,14 +200,15 @@ class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
 			int start = x > 0 ? 0 : (0-x)/ 50;
-			//cout << start << endl;
 			for (int i = start; i < start + 18; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+xInfo.height-heights[i], 50, heights[i]);
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
+					x+i*50*xInfo.width/800, y+xInfo.height-heights[i]*xInfo.height/600, 
+					50*xInfo.width/800, heights[i]*xInfo.height/600);
 			}
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed;
+			x -= speed*xInfo.width/800;
 		}
 
 		Building(int x, int y): x(x), y(y) {
@@ -255,7 +264,7 @@ class Text : public Displayable {
 };
 
 
-Plane plane(100, 100, 30, 30);
+Plane plane(100, 100, 50, 30);
 Building building(600, 0); //xInfo.height
 
 
@@ -264,7 +273,7 @@ class Bomb : public Displayable {
 	public:
 		void paint(XInfo &xInfo) {
 			//TODO: need to grab initial velocity of the plane
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20, 20, 0, 360*64);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20*xInfo.height/600, 20*xInfo.height/600, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
@@ -390,9 +399,9 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	hints.x = 100;
 	hints.y = 100;
 	hints.width = xInfo.width;
-	hints.height = xInfo.height; //!?!?!1
+	hints.height = xInfo.height;
 
-	hints.min_width = 600;
+	hints.min_width = 600; // !??! :(
 	hints.min_height = 400;
 	hints.flags = PPosition | PSize;
 
@@ -430,7 +439,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	// masks
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | 
-		PointerMotionMask | KeyReleaseMask |
+		KeyReleaseMask |
 		EnterWindowMask | LeaveWindowMask | ExposureMask);
 
 	makeBlankCursor(xInfo);
@@ -463,6 +472,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 			dList[i]->paint(xInfo);
 		}
 
+		// indicate # bombs left
 		string text = numBombs > 0 ? "Number of Bombs: " + convertToString(numBombs) : "No more bombs!";
 		Text numBombs(10, 10, text);
 		numBombs.paint(xInfo);
@@ -498,9 +508,11 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		XFlush( xInfo.display );
 
 	} else {
-		XClearWindow (xInfo.display, xInfo.window);
 		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
 		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
+
+		XClearWindow (xInfo.display, xInfo.window);
+		setResizeVars(xInfo);
 		Text line(10, xInfo.height/2, lineOne);
 		Text line2(10, xInfo.height/2 + 10, lineTwo);
 		line.paint(xInfo);
@@ -526,14 +538,12 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 			peekEvent.xkey.keycode == event.xkey.keycode){ 
 
 			// remove retriggered KeyPress event
-			// cout << "key was retriggered" << endl;
 			XNextEvent (xInfo.display, &event);
 			isRetriggered = 1;
 		}
 	}
 
 	if (!isRetriggered) {
-		// cout << "Key was released" << endl;
 
 		KeySym key;
 		char text[BufferSize];
@@ -621,9 +631,6 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 	}
 }
 
-void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
-	//plane.moveto(event.xbutton.x, event.xbutton.y);	
-}
 
 void handleAnimation(XInfo &xInfo, int inside, int splash) {
 	if (!splash) {
@@ -637,14 +644,9 @@ void handleAnimation(XInfo &xInfo, int inside, int splash) {
 	}
 }
 
-void handleResizing(XInfo &xInfo){
-	XWindowAttributes windowAttr;
-	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
-	int newHeight = windowAttr.height;
-	int newWidth = windowAttr.width;
-	cout << newHeight << " " << newWidth << endl;
-
-
+void handleResizing(XInfo xInfo){
+	setResizeVars(xInfo);
+	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
 unsigned long now() { // change this timer ...
@@ -676,9 +678,6 @@ void eventLoop(XInfo &xInfo) {
 					break;
 				case KeyRelease:
 					handleKeyRelease(xInfo, event);
-					break;
-				case MotionNotify:
-					handleMotion(xInfo, event, inside);
 					break;
 				case EnterNotify:
 					inside = 1;
@@ -727,7 +726,7 @@ int main ( int argc, char *argv[] ) {
 	 	delete dBombList[i];
 	}
 
-	//	delete xInfo.display;
+	//	delete xInfo.display; ??!!
 	dList.clear();
 	dBombList.clear();
 }
