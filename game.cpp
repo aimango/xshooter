@@ -1,6 +1,6 @@
 #include <iostream>
-#include <list>
 #include <vector>
+#include <deque>
 #include <cstring>
 #include <cstdlib>
 #include <sys/time.h>
@@ -20,7 +20,7 @@ using namespace std;
 // collision detection
 // 'catchers' on the buildings
 // keyboard acceleration - doneish
-// memory dealloc
+// memory dealloc - figure out how to avoid ptrs.. 
 // game pausing - done ish
 // splash screen - need to fig out how to increase font
 // need better MVC structure
@@ -34,10 +34,10 @@ const int FPS = 30;
 struct XInfo {
 	int height;
 	int width;
-	Display	 *display;
-	int		 screen;
-	Window	 window;
-	GC		 gc[3];
+	Display *display;
+	int screen;
+	Window window;
+	GC gc[3];
 	XFontStruct *font;
 };
 
@@ -129,21 +129,6 @@ class Plane : public Displayable {
 			}
 		}
 
-		// void moveX(int dir) {
-		// 	if (dir)
-		// 		x+=15;f
-		// 	else
-		// 		x-=15;
-		// }
-
-		// void moveY(int dir){
-		// 	if (dir)
-		// 		y+=15;
-		// 	else 
-		// 		y-=15;
-		// }
-
-
 		// constructor
 		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
 			velocityX = 0;
@@ -202,6 +187,51 @@ class Building : public Displayable {
 		vector<int> heights;
 };
 
+
+class Text : public Displayable{  
+	public:
+	virtual void paint(XInfo &xinfo)
+	{  
+		XDrawString( xinfo.display, xinfo.window, xinfo.gc[2], 
+	       this->x, this->y, this->s.c_str(), this->s.length() );
+	}
+
+	// constructor
+	Text(int x, int y, string s):x(x), y(y), s(s)  {}
+
+	private:
+	int x;
+	int y;
+	string s;
+};
+
+
+void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
+		//http://www.lemoda.net/c/xlib-text-box/index.html
+
+		int x;
+		int y;
+		int direction;
+		int ascent;
+		int descent;
+		XCharStruct overall;
+
+		// Centre the text
+	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
+	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
+	
+		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
+		              &direction, &ascent, &descent, &overall);
+		x = (xInfo.width - overall.width) / 2;
+		y = xInfo.height / 2 + (ascent - descent) / 2;
+
+		XClearWindow (xInfo.display, xInfo.window);
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y, lineOne.c_str(), lineOne.length());
+		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+		             x, y+20, lineTwo.c_str(), lineTwo.length());
+}
+
 Plane plane(100, 100, 30, 30);
 Building building(600, 0); //xInfo.height
 
@@ -233,28 +263,8 @@ class Bomb : public Displayable {
 };
 
 
-
-/*
- * Display some text where the user clicked the mouse.
- */
-class Text : public Displayable
-{  public:
-	  virtual void paint(XInfo &xInfo)
-	  {  XDrawImageString( xInfo.display, xInfo.window, xInfo.gc[1], 
-			   this->x, this->y, this->s.c_str(), this->s.length() );
-	  }
-	  
-	  // constructor
-	  Text(int x, int y, string s):x(x), y(y), s(s)  {}
-	  
-   private:
-	  int x;
-	  int y;
-	  string s;
-};
-
-list<Displayable *> dList;				// list of Displayables
-list<Bomb *> dBombList;					// list of Bombs
+deque<Displayable *> dList;				// list of Displayables
+deque<Bomb *> dBombList;					// list of Bombs
 
 
 /** 
@@ -386,40 +396,12 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	sleep(2);	// let server get set up before sending drawing commands
 }
 
-void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
-		//http://www.lemoda.net/c/xlib-text-box/index.html
-
-		int x;
-		int y;
-		int direction;
-		int ascent;
-		int descent;
-		XCharStruct overall;
-
-		// Centre the text
-	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
-	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
-	
-		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
-		              &direction, &ascent, &descent, &overall);
-		x = (xInfo.width - overall.width) / 2;
-		y = xInfo.height / 2 + (ascent - descent) / 2;
-
-		XClearWindow (xInfo.display, xInfo.window);
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y, lineOne.c_str(), lineOne.length());
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y+20, lineTwo.c_str(), lineTwo.length());
-}
 
 /*
  * Function to repaint a display list
  */
 void repaint( XInfo &xInfo, int splash) {
 	if (!splash) {
-		list<Displayable *>::const_iterator begin = dList.begin();
-		list<Displayable *>::const_iterator end = dList.end();
-
 		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
 		
 		XWindowAttributes windowInfo;
@@ -429,16 +411,18 @@ void repaint( XInfo &xInfo, int splash) {
 
 		//re-draws the backgound
 		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
-		while( begin != end ) {
-			Displayable *d = *begin;
-			d->paint(xInfo);
-			begin++;
+		for (int i = 0; i < dList.size(); i++) {
+			dList[i]->paint(xInfo);
 		}
 		XFlush( xInfo.display );
 	} else {
+		XClearWindow (xInfo.display, xInfo.window);
 		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
 		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
-		drawText(xInfo, lineOne, lineTwo);
+		Text line(10, xInfo.height/2, lineOne);
+		Text line2(10, xInfo.height/2 + 10, lineTwo);
+		line.paint(xInfo);
+		line2.paint(xInfo);
 	}
 }
 
@@ -556,15 +540,12 @@ void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
 	//plane.moveto(event.xbutton.x, event.xbutton.y);	
 }
 
-void handleAnimation(XInfo &xInfo, int inside) {
-	building.move(xInfo);
-
-	list<Bomb *>::const_iterator begin = dBombList.begin();
-	list<Bomb *>::const_iterator end = dBombList.end();
-	while( begin != end ) {
-		Bomb *d = *begin;
-		d->move(xInfo);
-		begin++;
+void handleAnimation(XInfo &xInfo, int inside, int splash) {
+	if (!splash) {
+		building.move(xInfo);
+		for (int i = 0; i < dBombList.size(); i++){
+				dBombList[i]->move(xInfo);
+		}
 	}
 }
 
@@ -624,7 +605,7 @@ void eventLoop(XInfo &xInfo) {
 		
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
-			handleAnimation(xInfo, inside);
+			handleAnimation(xInfo, inside, splash);
 			repaint(xInfo, splash);
 			lastRepaint = now();
 		}
@@ -648,23 +629,16 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-	// list<Displayable *>::const_iterator begin = dList.begin();
-	// list<Displayable *>::const_iterator end = dList.end();
 
-	// while (begin != end) {
-	// 	Displayable *d = *begin;
-	// 	begin++;
-	// 	delete d;
-	// }
+	for (int i = 0; i < dList.size(); i++) {
+		delete dList[i];
+	}
+	for (int i = 0; i < dBombList.size(); i++) {
+	 	delete dBombList[i];
+	}
 
-	// list<Bomb *>::const_iterator beginn = dBombList.begin();
-	// list<Bomb *>::const_iterator endd = dBombList.end();
-	// while (beginn != endd) {
-	// 	Bomb *dq = *beginn;
-	// 	beginn++;
-	// 	delete dq;
-	// }
-
+	delete xInfo.font;
+	//	delete xInfo.display;
 	dList.clear();
 	dBombList.clear();
 }
