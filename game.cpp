@@ -6,7 +6,7 @@
 #include <sys/time.h>
 #include <math.h>
 #include <stdio.h>
-
+#include <sstream>
 /*
  * Header files for X functions
  */
@@ -50,6 +50,12 @@ void error( string str ) {
 	exit(0);
 }
 
+string convertToString (int i) {
+	string s;
+	stringstream out;
+	out << i;
+	return out.str();
+}
 
 /*
  * An abstract class representing displayable things. 
@@ -442,7 +448,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xInfo, int splash) {
+void repaint( XInfo &xInfo, int splash, int numBombs) {
 	if (!splash) {
 		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
 		
@@ -457,9 +463,11 @@ void repaint( XInfo &xInfo, int splash) {
 			dList[i]->paint(xInfo);
 		}
 
+		string text = numBombs > 0 ? "Number of Bombs: " + convertToString(numBombs) : "No more bombs!";
+		Text numBombs(10, 10, text);
+		numBombs.paint(xInfo);
 
 		// collision detection > <
-
 		deque<int> heights = building.getHeights();
 
 		for (int j = 0; j< dBombList.size(); j++) {
@@ -473,8 +481,8 @@ void repaint( XInfo &xInfo, int splash) {
 				int dCatcherY = dCatcherList[i]->getY();
 
 				if  (dCatcherX > 0 && dCatcherX < xInfo.width){
-					if ( dBombY + 10 > dCatcherY - 15 
-						&& dBombX + 20 > dCatcherX - 30 && dBombX - 20 < dCatcherX + 30){
+					if ( dBombY + 20 > dCatcherY && dBombY < dCatcherY + 30
+						&& dBombX + 20 > dCatcherX && dBombX < dCatcherX + 30){
 
 						cout << dCatcherX << " " << dCatcherY << endl;
 						cout << dBombX << " " << dBombY << endl;
@@ -485,16 +493,6 @@ void repaint( XInfo &xInfo, int splash) {
 					}
 				}
 			}
-
-			// int index = dBombList[i]->getX()/50 + start ; //!?!??!
-			
-
-			// if (dBombList[i]->getY() >= xInfo.height - heights[index]) {
-			// 	cout << "index " << index << endl;
-			// 	cout << "HITTT" <<endl;
-			// 	dBombList[i]->remove();
-			// }
-
 		}
 
 		XFlush( xInfo.display );
@@ -570,7 +568,7 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 	}
 }
 
-void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
+void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 	KeySym key;
 	char text[BufferSize];
 	
@@ -587,9 +585,12 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 				error("Terminating normally.");
 				break;
 			case 'm': {
-				Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-				dList.push_back(bomb);
-				dBombList.push_front(bomb);
+				numBombs--;
+				if (numBombs >= 0){
+					Bomb *bomb = new Bomb(plane.getX(), plane.getY());
+					dList.push_back(bomb);
+					dBombList.push_front(bomb);
+				} 
 				break;
 			}
 			case 'w': {
@@ -652,15 +653,17 @@ unsigned long now() { // change this timer ...
 	return tv.tv_sec * 1000000 + tv.tv_usec;
 }
 
-void eventLoop(XInfo &xInfo) {
-	// Add stuff to paint to the display list
-	dList.push_back(&building);
-	dList.push_front(&plane);
-	
+void eventLoop(XInfo &xInfo) {	
 	XEvent event;
 	unsigned long lastRepaint = 0;
 	int inside = 0;
 	int splash = 1;
+	int numBombs = 50;
+
+	// Add stuff to paint to the display list
+	dList.push_back(&building);
+	dList.push_front(&plane);
+
 	while(true) {
 		if (XPending(xInfo.display) > 0) {
 			XNextEvent( xInfo.display, &event );
@@ -669,7 +672,7 @@ void eventLoop(XInfo &xInfo) {
 					handleButtonPress(xInfo, event);
 					break;
 				case KeyPress:
-					handleKeyPress(xInfo, event, splash);
+					handleKeyPress(xInfo, event, splash, numBombs);
 					break;
 				case KeyRelease:
 					handleKeyRelease(xInfo, event);
@@ -693,7 +696,7 @@ void eventLoop(XInfo &xInfo) {
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
 			handleAnimation(xInfo, inside, splash);
-			repaint(xInfo, splash);
+			repaint(xInfo, splash, numBombs);
 			lastRepaint = now();
 		}
 		if (XPending(xInfo.display) == 0) {
