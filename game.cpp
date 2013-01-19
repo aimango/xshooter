@@ -113,10 +113,10 @@ class Plane : public Displayable {
 
 		void setVelocityX(int dir) {
 			if (dir) {
-				velocityX += 15;
+				velocityX += 10;
 			}
 			else {
-				velocityX -= 15;
+				velocityX -= 10;
 			}
 		}
 
@@ -147,19 +147,20 @@ class Plane : public Displayable {
 class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
-			for (int i = 0; i < 150; i++) {
+			int start = x > 0 ? 0 : (0-x)/ 50;
+			//cout << start << endl;
+			for (int i = start; i < start + 18; i++) {
 				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], x+i*50, y+xInfo.height-heights[i], 50, heights[i]);
 			}
 		}
 
 		void move(XInfo &xInfo) {
-			x = x - speed;
-
+			x -= speed;
 		}
 
 		Building(int x, int y): x(x), y(y) {
-			speed = 10;
-			for (int i = 0 ; i < 100; i++) {
+			speed = 5;
+			for (int i = 0 ; i < 150; i++) {
 				int person = rand()%4;
 				if (person == 1) {
 
@@ -176,7 +177,7 @@ class Building : public Displayable {
 			return y;
 		}
 
-		vector<int> getHeights() {
+		deque<int> getHeights() {
 			return heights;
 		}
 
@@ -184,7 +185,7 @@ class Building : public Displayable {
 		int x;
 		int y;
 		int speed;
-		vector<int> heights;
+		deque<int> heights;
 };
 
 
@@ -206,31 +207,31 @@ class Text : public Displayable{
 };
 
 
-void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
-		//http://www.lemoda.net/c/xlib-text-box/index.html
+// void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
+// 		//http://www.lemoda.net/c/xlib-text-box/index.html
 
-		int x;
-		int y;
-		int direction;
-		int ascent;
-		int descent;
-		XCharStruct overall;
+// 		int x;
+// 		int y;
+// 		int direction;
+// 		int ascent;
+// 		int descent;
+// 		XCharStruct overall;
 
-		// Centre the text
-	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
-	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
+// 		// Centre the text
+// 	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
+// 	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
 	
-		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
-		              &direction, &ascent, &descent, &overall);
-		x = (xInfo.width - overall.width) / 2;
-		y = xInfo.height / 2 + (ascent - descent) / 2;
+// 		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
+// 		              &direction, &ascent, &descent, &overall);
+// 		x = (xInfo.width - overall.width) / 2;
+// 		y = xInfo.height / 2 + (ascent - descent) / 2;
 
-		XClearWindow (xInfo.display, xInfo.window);
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y, lineOne.c_str(), lineOne.length());
-		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-		             x, y+20, lineTwo.c_str(), lineTwo.length());
-}
+// 		XClearWindow (xInfo.display, xInfo.window);
+// 		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+// 		             x, y, lineOne.c_str(), lineOne.length());
+// 		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
+// 		             x, y+20, lineTwo.c_str(), lineTwo.length());
+// }
 
 Plane plane(100, 100, 30, 30);
 Building building(600, 0); //xInfo.height
@@ -241,14 +242,27 @@ class Bomb : public Displayable {
 	public:
 		void paint(XInfo &xInfo) {
 			//TODO: need to grab initial velocity of the plane
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 10, 10, 0, 360*64);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20, 20, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
 			y = y + speed;
 			x = x - speed;
-			if (y > building.getY()+xInfo.height-building.getHeights().at(0))
-				cout << "hit " << xInfo.height-building.getHeights().at(0) << endl;
+		}
+
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		void remove(){
+			x= -100;
+			y= -100;
+			speed = 0;
 		}
 
 		Bomb(int x, int y): x(x), y(y) {
@@ -264,8 +278,8 @@ class Bomb : public Displayable {
 
 
 deque<Displayable *> dList;				// list of Displayables
-deque<Bomb *> dBombList;					// list of Bombs
-
+deque<Bomb *> dBombList;				// list of Bombs
+deque<Building *> dBuildingList;		// list of Buildings
 
 /** 
  * Set up colors
@@ -414,6 +428,23 @@ void repaint( XInfo &xInfo, int splash) {
 		for (int i = 0; i < dList.size(); i++) {
 			dList[i]->paint(xInfo);
 		}
+
+		deque<int> heights = building.getHeights();
+		int start = building.getX() > 0 ? 0 : (0-building.getX())/ 50;
+
+		for (int i = 0; i < dBombList.size(); i++) {
+			if (dBombList[i]->getX() < 0)
+				continue;
+
+			int index = dBombList[i]->getX()/50 + start ;
+
+			if (dBombList[i]->getY() >= xInfo.height - heights[index]) {
+				cout << "HITTT" <<endl;
+				dBombList[i]->remove();
+			}
+
+		}
+
 		XFlush( xInfo.display );
 	} else {
 		XClearWindow (xInfo.display, xInfo.window);
@@ -504,7 +535,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 				break;
 			case 'm': {
 				Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-				dList.push_front(bomb);
+				dList.push_back(bomb);
 				dBombList.push_front(bomb);
 				break;
 			}
@@ -544,7 +575,7 @@ void handleAnimation(XInfo &xInfo, int inside, int splash) {
 	if (!splash) {
 		building.move(xInfo);
 		for (int i = 0; i < dBombList.size(); i++){
-				dBombList[i]->move(xInfo);
+			dBombList[i]->move(xInfo);
 		}
 	}
 }
@@ -637,7 +668,6 @@ int main ( int argc, char *argv[] ) {
 	 	delete dBombList[i];
 	}
 
-	delete xInfo.font;
 	//	delete xInfo.display;
 	dList.clear();
 	dBombList.clear();
