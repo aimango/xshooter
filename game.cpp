@@ -293,12 +293,12 @@ class Building : public Displayable {
 
 		void setNewXY(int newWidth, int newHeight){
 			for (int i = 0; i < heights.size(); i++) {
-				heights[i] *= newHeight / 600;
+				heights[i] = heights[i] * newHeight / 600;
 
 			}
-			x *= newWidth/ 800;
+			// x = x * newWidth / 800;
 			for (int i = 0; i < dCatcherList.size(); i++) {
-				dCatcherList[i].setNewXY(dCatcherList[i]->getX() * newWidth / 800, dCatcherList[i]->getY() * newHeight/600);
+				dCatcherList[i]->setNewXY(dCatcherList[i]->getX() * newWidth / 800, dCatcherList[i]->getY() * newHeight/600);
 			}
 		}
 
@@ -321,9 +321,8 @@ void setResizeVars(XInfo &xInfo) {
 
 void handleResizing(XInfo &xInfo){
 	setResizeVars(xInfo);
+	building.setNewXY(xInfo.width, xInfo.height);
 
-
-	
 	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
