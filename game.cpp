@@ -41,18 +41,12 @@ struct XInfo {
 	XFontStruct *font;
 };
 
-void setResizeVars(XInfo &xInfo) {
-	XWindowAttributes windowAttr;
-	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
-	xInfo.height = windowAttr.height;
-	xInfo.width = windowAttr.width;
-}
 
 /*
  * Function to put out a message on error exits.
  */
-void error( string str ) {
-	cerr << str << endl;
+void error( string msg ) {
+	cerr << msg << endl;
 	exit(0);
 }
 
@@ -62,6 +56,7 @@ string convertToString (int i) {
 	out << i;
 	return out.str();
 }
+
 
 /*
  * An abstract class representing displayable things. 
@@ -95,7 +90,6 @@ class Plane : public Displayable {
 			/* draw a small triangle at the top-left corner of the window. */
 			/* the triangle is made of a set of consecutive lines, whose   */
 			/* end-point pixels are specified in the 'points' array.       */
-			/* draw the triangle in a yellow color. */
 			// TODO not sure how to set thickness of lines
 
 			x += velocityX;
@@ -174,49 +168,13 @@ class Plane : public Displayable {
 		int velocityY;
 };
 
-class Catcher : public Displayable {
-
-	public:
-		void paint(XInfo &xInfo) {
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-				x*xInfo.width/800+10, xInfo.height-y*xInfo.height/600-15, 
-				30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
-		}
-
-		void move(XInfo &xInfo) {
-			x -= speed * xInfo.width/800;
-		}
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		void remove(){
-			x= -100;
-			y= -100;
-			speed = 0;
-		}
-
-		Catcher(int x, int y): x(x), y(y){
-			speed = 5;
-		}
-
-	private:
-		int x;
-		int y;
-		int speed;
-};
-
 class Bomb : public Displayable {
 
 	public:
 		void paint(XInfo &xInfo) {
 			//TODO: need to grab initial velocity of the plane
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20*xInfo.height/600, 20*xInfo.height/600, 0, 360*64);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 
+				20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
@@ -249,25 +207,54 @@ class Bomb : public Displayable {
 };
 
 
+class Catcher : public Displayable {
+
+	public:
+		void paint(XInfo &xInfo) {
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
+				x + 10, xInfo.height - y - 15, 
+				30, 30, 0, 360*64);
+		}
+
+		void move(XInfo &xInfo) {
+			x -= speed * xInfo.width/800;
+		}
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		void setNewXY(int x, int y){
+			this->x = x;
+			this->y = y;
+		}
+		void remove(){
+			x= -100;
+			y= -100;
+			speed = 0;
+		}
+
+		Catcher(int x, int y): x(x), y(y){
+			speed = 5;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+};
+
+
 deque<Bomb *> dBombList;				// list of Bombs
 deque<Catcher *> dCatcherList; 			// list of Catchers
 deque<Displayable *> dList;				// list of Displayables
 
 class Building : public Displayable {
 	public:
-		virtual void paint(XInfo &xInfo) {
-			int start = x > 0 ? 0 : (0-x)/ 50;
-			for (int i = start; i < start + 18; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-					x+i*50*xInfo.width/800, y+xInfo.height-heights[i]*xInfo.height/600, 
-					50*xInfo.width/800, heights[i]*xInfo.height/600);
-			}
-		}
-
-		void move(XInfo &xInfo) {
-			x -= speed*xInfo.width/800;
-		}
-
 		Building(int x, int y): x(x), y(y) {
 			speed = 5;
 			for (int i = 0 ; i < 150; i++) {
@@ -283,12 +270,36 @@ class Building : public Displayable {
 			}
 		}
 
+		virtual void paint(XInfo &xInfo) {
+			int start = x > 0 ? 0 : (0-x)/ 50;
+			for (int i = start; i < (start + 18) * xInfo.width/800; i++) {
+				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
+					x + i * 50, y + xInfo.height - heights[i], 
+					50, heights[i]);
+			}
+		}
+
+		void move(XInfo &xInfo) {
+			x -= speed*xInfo.width/800;
+		}
+
 		int getX() {
 			return x;
 		}
 
 		int getY() {
 			return y;
+		}
+
+		void setNewXY(int newWidth, int newHeight){
+			for (int i = 0; i < heights.size(); i++) {
+				heights[i] *= newHeight / 600;
+
+			}
+			x *= newWidth/ 800;
+			for (int i = 0; i < dCatcherList.size(); i++) {
+				dCatcherList[i].setNewXY(dCatcherList[i]->getX() * newWidth / 800, dCatcherList[i]->getY() * newHeight/600);
+			}
 		}
 
 	private:
@@ -301,6 +312,20 @@ class Building : public Displayable {
 Plane plane(100, 100, 50, 30);
 Building building(600, 0); //xInfo.height
 
+void setResizeVars(XInfo &xInfo) {
+	XWindowAttributes windowAttr;
+	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
+	xInfo.height = windowAttr.height;
+	xInfo.width = windowAttr.width;
+}
+
+void handleResizing(XInfo &xInfo){
+	setResizeVars(xInfo);
+
+
+	
+	cout << xInfo.height << " " << xInfo.width << endl;
+}
 
 /** 
  * Set up colors
@@ -628,11 +653,6 @@ void handleAnimation(XInfo &xInfo, int inside, int splash) {
 			dBombList[i]->move(xInfo);
 		}
 	}
-}
-
-void handleResizing(XInfo xInfo){
-	setResizeVars(xInfo);
-	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
 unsigned long now() { // change this timer ...
