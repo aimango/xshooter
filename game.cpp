@@ -71,6 +71,24 @@ class Displayable {
 		virtual void paint(XInfo &xInfo) = 0;
 };
 
+class Text : public Displayable {  
+	public:
+	virtual void paint(XInfo &xinfo)
+	{  
+		XDrawString( xinfo.display, xinfo.window, xinfo.gc[2], 
+	       this->x, this->y, this->s.c_str(), this->s.length() );
+	}
+
+	// constructor
+	Text(int x, int y, string s):x(x), y(y), s(s)  {}
+
+	private:
+	int x;
+	int y;
+	string s;
+};
+
+
 class Plane : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
@@ -166,7 +184,7 @@ class Catcher : public Displayable {
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed *xInfo.width/800;
+			x -= speed * xInfo.width/800;
 		}
 
 		int getX() {
@@ -193,6 +211,45 @@ class Catcher : public Displayable {
 		int speed;
 };
 
+class Bomb : public Displayable {
+
+	public:
+		void paint(XInfo &xInfo) {
+			//TODO: need to grab initial velocity of the plane
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20*xInfo.height/600, 20*xInfo.height/600, 0, 360*64);
+		}
+
+		void move(XInfo &xInfo) {
+			y = y + speed;
+			x = x - speed;
+		}
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		void remove(){
+			x= -100;
+			y= -100;
+			speed = 0;
+		}
+
+		Bomb(int x, int y): x(x), y(y) {
+			speed = 5;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+};
+
+
+deque<Bomb *> dBombList;				// list of Bombs
 deque<Catcher *> dCatcherList; 			// list of Catchers
 deque<Displayable *> dList;				// list of Displayables
 
@@ -234,10 +291,6 @@ class Building : public Displayable {
 			return y;
 		}
 
-		deque<int> getHeights() {
-			return heights;
-		}
-
 	private:
 		int x;
 		int y;
@@ -245,70 +298,9 @@ class Building : public Displayable {
 		deque<int> heights;
 };
 
-
-class Text : public Displayable {  
-	public:
-	virtual void paint(XInfo &xinfo)
-	{  
-		XDrawString( xinfo.display, xinfo.window, xinfo.gc[2], 
-	       this->x, this->y, this->s.c_str(), this->s.length() );
-	}
-
-	// constructor
-	Text(int x, int y, string s):x(x), y(y), s(s)  {}
-
-	private:
-	int x;
-	int y;
-	string s;
-};
-
-
 Plane plane(100, 100, 50, 30);
 Building building(600, 0); //xInfo.height
 
-
-class Bomb : public Displayable {
-
-	public:
-		void paint(XInfo &xInfo) {
-			//TODO: need to grab initial velocity of the plane
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 20*xInfo.height/600, 20*xInfo.height/600, 0, 360*64);
-		}
-
-		void move(XInfo &xInfo) {
-			y = y + speed;
-			x = x - speed;
-		}
-
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		void remove(){
-			x= -100;
-			y= -100;
-			speed = 0;
-		}
-
-		Bomb(int x, int y): x(x), y(y) {
-			speed = 5;
-		}
-
-	private:
-		int x;
-		int y;
-		int speed;
-};
-
-
-deque<Bomb *> dBombList;				// list of Bombs
-deque<Building *> dBuildingList;		// list of Buildings
 
 /** 
  * Set up colors
@@ -373,7 +365,7 @@ void makeBlankCursor(XInfo &xInfo) {
  */
 void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSizeHints hints;
-	unsigned long white, black;
+	unsigned long black;
 
 	srand ( time(NULL) );
 
@@ -393,7 +385,6 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	 */
 	xInfo.screen = DefaultScreen( xInfo.display );
 
-	white = XWhitePixel( xInfo.display, xInfo.screen );
 	black = XBlackPixel( xInfo.display, xInfo.screen );
 
 	hints.x = 100;
@@ -401,7 +392,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	hints.width = xInfo.width;
 	hints.height = xInfo.height;
 
-	hints.min_width = 600; // !??! :(
+	hints.min_width = 600; // !??! 
 	hints.min_height = 400;
 	hints.flags = PPosition | PSize;
 
@@ -434,15 +425,12 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	}
 
 	setGCColors(xInfo);
-
+	makeBlankCursor(xInfo);
 
 	// masks
 	XSelectInput(xInfo.display, xInfo.window, 
-		ButtonPressMask | KeyPressMask | 
-		KeyReleaseMask |
+		ButtonPressMask | KeyPressMask | KeyReleaseMask |
 		EnterWindowMask | LeaveWindowMask | ExposureMask);
-
-	makeBlankCursor(xInfo);
 
 	/*
 	 * Put the window on the screen.
@@ -478,7 +466,6 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		numBombs.paint(xInfo);
 
 		// collision detection > <
-		deque<int> heights = building.getHeights();
 
 		for (int j = 0; j< dBombList.size(); j++) {
 			int dBombX = dBombList[j]->getX();
@@ -630,7 +617,6 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 		}
 	}
 }
-
 
 void handleAnimation(XInfo &xInfo, int inside, int splash) {
 	if (!splash) {
