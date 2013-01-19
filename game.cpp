@@ -37,7 +37,7 @@ struct XInfo {
 	Display *display;
 	int screen;
 	Window window;
-	GC gc[3];
+	GC gc[4];
 	XFontStruct *font;
 };
 
@@ -144,6 +144,44 @@ class Plane : public Displayable {
 		int velocityY;
 };
 
+class Catcher : public Displayable {
+
+	public:
+		void paint(XInfo &xInfo) {
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], x+10, xInfo.height-y-15, 30, 30, 0, 360*64);
+		}
+
+		void move(XInfo &xInfo) {
+			x -= speed;
+		}
+
+		int getX() {
+			return x;
+		}
+
+		int getY() {
+			return y;
+		}
+
+		void remove(){
+			x= -100;
+			y= -100;
+			speed = 0;
+		}
+
+		Catcher(int x, int y): x(x), y(y){
+			speed = 5;
+		}
+
+	private:
+		int x;
+		int y;
+		int speed;
+};
+
+deque<Catcher *> dCatcherList; 			// list of Catchers
+deque<Displayable *> dList;				// list of Displayables
+
 class Building : public Displayable {
 	public:
 		virtual void paint(XInfo &xInfo) {
@@ -161,11 +199,15 @@ class Building : public Displayable {
 		Building(int x, int y): x(x), y(y) {
 			speed = 5;
 			for (int i = 0 ; i < 150; i++) {
+				int height = rand() % 400 + 50;
+				heights.push_back( height );
 				int person = rand()%4;
 				if (person == 1) {
-
+					Catcher *c = new Catcher(x+i*50, height);
+					dCatcherList.push_back(c);
+					dList.push_front(c);
 				}
-				heights.push_back( rand() % 400 + 50 );
+
 			}
 		}
 
@@ -189,7 +231,7 @@ class Building : public Displayable {
 };
 
 
-class Text : public Displayable{  
+class Text : public Displayable {  
 	public:
 	virtual void paint(XInfo &xinfo)
 	{  
@@ -206,32 +248,6 @@ class Text : public Displayable{
 	string s;
 };
 
-
-// void drawText(XInfo &xInfo, string lineOne, string lineTwo) {
-// 		//http://www.lemoda.net/c/xlib-text-box/index.html
-
-// 		int x;
-// 		int y;
-// 		int direction;
-// 		int ascent;
-// 		int descent;
-// 		XCharStruct overall;
-
-// 		// Centre the text
-// 	    xInfo.font = XLoadQueryFont (xInfo.display, "fixed");
-// 	    XSetFont (xInfo.display, xInfo.gc[0], xInfo.font->fid);
-	
-// 		XTextExtents (xInfo.font, lineOne.c_str(), lineOne.length(),
-// 		              &direction, &ascent, &descent, &overall);
-// 		x = (xInfo.width - overall.width) / 2;
-// 		y = xInfo.height / 2 + (ascent - descent) / 2;
-
-// 		XClearWindow (xInfo.display, xInfo.window);
-// 		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-// 		             x, y, lineOne.c_str(), lineOne.length());
-// 		XDrawString (xInfo.display, xInfo.window, xInfo.gc[2],
-// 		             x, y+20, lineTwo.c_str(), lineTwo.length());
-// }
 
 Plane plane(100, 100, 30, 30);
 Building building(600, 0); //xInfo.height
@@ -273,11 +289,9 @@ class Bomb : public Displayable {
 		int x;
 		int y;
 		int speed;
-
 };
 
 
-deque<Displayable *> dList;				// list of Displayables
 deque<Bomb *> dBombList;				// list of Bombs
 deque<Building *> dBuildingList;		// list of Buildings
 
@@ -298,16 +312,45 @@ void setGCColors(XInfo &xInfo) {
 
 	// use hot pink 
 	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
-	XColor pink;
+	XColor purple;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &pink, &pink);
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &purple, &purple);
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[1], pink.pixel);
+	XSetForeground(xInfo.display, xInfo.gc[1], purple.pixel);
 	
 	// use white
 	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
+
+	XColor pink;
+	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "pink", &pink, &pink);
+	if (rc == 0) {
+		error("XAllocNamedColor - failed to allocated 'pink' color.");
+	}
+	XSetForeground(xInfo.display, xInfo.gc[3], pink.pixel);
+}
+
+void makeBlankCursor(XInfo &xInfo) {
+	/* vars to make blank cursor */
+	XColor dummy;
+	char data[1] = {0};
+
+	/* make a blank cursor */
+	Pixmap blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
+	if(blank == None) {
+		error("error: out of memory. can't create blank pixmap from data");
+	}
+	Cursor cursor = XCreatePixmapCursor(xInfo.display, blank, blank, &dummy, &dummy, 0, 0);
+	XFreePixmap (xInfo.display, blank);
+
+	// set the blank cursor
+	XDefineCursor(xInfo.display, xInfo.window, cursor);
+
+	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
+	//XUndefineCursor(xInfo.display, xInfo.window);
+
 }
 
  /*
@@ -341,7 +384,10 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	hints.x = 100;
 	hints.y = 100;
 	hints.width = xInfo.width;
-	hints.height = xInfo.height;
+	hints.height = xInfo.height; //!?!?!1
+
+	hints.min_width = 600;
+	hints.min_height = 400;
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow( 
@@ -365,7 +411,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	/* 
 	 * Create Graphics Contexts
 	 */
-	for (int i = 0; i <= 2; i++){
+	for (int i = 0; i <= 3; i++){
 		xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
 		XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 		XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
@@ -381,25 +427,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		PointerMotionMask | KeyReleaseMask |
 		EnterWindowMask | LeaveWindowMask | ExposureMask);
 
-
-	/* vars to make blank cursor */
-	XColor dummy;
-	char data[1] = {0};
-
-	/* make a blank cursor */
-	Pixmap blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
-	if(blank == None) {
-		error("error: out of memory. can't create blank pixmap from data");
-	}
-	Cursor cursor = XCreatePixmapCursor(xInfo.display, blank, blank, &dummy, &dummy, 0, 0);
-	XFreePixmap (xInfo.display, blank);
-
-	// set the blank cursor
-	XDefineCursor(xInfo.display, xInfo.window, cursor);
-
-	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
-	//XUndefineCursor(xInfo.display, xInfo.window);
-
+	makeBlankCursor(xInfo);
 
 	/*
 	 * Put the window on the screen.
@@ -407,7 +435,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XMapRaised( xInfo.display, xInfo.window );
 	
 	XFlush(xInfo.display);
-	sleep(2);	// let server get set up before sending drawing commands
+	//sleep(2);	// let server get set up before sending drawing commands
 }
 
 
@@ -429,23 +457,48 @@ void repaint( XInfo &xInfo, int splash) {
 			dList[i]->paint(xInfo);
 		}
 
-		deque<int> heights = building.getHeights();
-		int start = building.getX() > 0 ? 0 : (0-building.getX())/ 50;
 
-		for (int i = 0; i < dBombList.size(); i++) {
-			if (dBombList[i]->getX() < 0)
+		// collision detection > <
+
+		deque<int> heights = building.getHeights();
+
+		for (int j = 0; j< dBombList.size(); j++) {
+			int dBombX = dBombList[j]->getX();
+			int dBombY = dBombList[j]->getY();
+			if (dBombX < 0 || dBombY > xInfo.width || dBombX < building.getX())
 				continue;
 
-			int index = dBombList[i]->getX()/50 + start ;
+			for (int i = 0; i < dCatcherList.size(); i++) {
+				int dCatcherX = dCatcherList[i]->getX();
+				int dCatcherY = dCatcherList[i]->getY();
 
-			if (dBombList[i]->getY() >= xInfo.height - heights[index]) {
-				cout << "HITTT" <<endl;
-				dBombList[i]->remove();
+				if  (dCatcherX > 0 && dCatcherX < xInfo.width){
+					if ( dBombY + 10 > dCatcherY - 15 
+						&& dBombX + 20 > dCatcherX - 30 && dBombX - 20 < dCatcherX + 30){
+
+						cout << dCatcherX << " " << dCatcherY << endl;
+						cout << dBombX << " " << dBombY << endl;
+						cout <<" HITTT " << endl;
+						dBombList[j]->remove();
+						dCatcherList[i]->remove();
+						break;
+					}
+				}
 			}
+
+			// int index = dBombList[i]->getX()/50 + start ; //!?!??!
+			
+
+			// if (dBombList[i]->getY() >= xInfo.height - heights[index]) {
+			// 	cout << "index " << index << endl;
+			// 	cout << "HITTT" <<endl;
+			// 	dBombList[i]->remove();
+			// }
 
 		}
 
 		XFlush( xInfo.display );
+
 	} else {
 		XClearWindow (xInfo.display, xInfo.window);
 		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
@@ -574,6 +627,9 @@ void handleMotion(XInfo &xInfo, XEvent &event, int inside) {
 void handleAnimation(XInfo &xInfo, int inside, int splash) {
 	if (!splash) {
 		building.move(xInfo);
+		for (int i = 0; i< dCatcherList.size(); i++){
+			dCatcherList[i]->move(xInfo);
+		}
 		for (int i = 0; i < dBombList.size(); i++){
 			dBombList[i]->move(xInfo);
 		}
@@ -598,7 +654,7 @@ unsigned long now() { // change this timer ...
 
 void eventLoop(XInfo &xInfo) {
 	// Add stuff to paint to the display list
-	dList.push_front(&building);
+	dList.push_back(&building);
 	dList.push_front(&plane);
 	
 	XEvent event;
