@@ -228,6 +228,10 @@ class Catcher : public Displayable {
 			return y;
 		}
 
+		int getIndex() {
+			return buildingIndex;
+		}
+
 		void setNewXY(int x, int y){
 			this->x = x;
 			this->y = y;
@@ -238,7 +242,7 @@ class Catcher : public Displayable {
 			speed = 0;
 		}
 
-		Catcher(int x, int y): x(x), y(y){
+		Catcher(int x, int y, int buildingIndex): x(x), y(y), buildingIndex(buildingIndex) {
 			speed = 5;
 		}
 
@@ -246,6 +250,7 @@ class Catcher : public Displayable {
 		int x;
 		int y;
 		int speed;
+		int buildingIndex;
 };
 
 
@@ -262,7 +267,7 @@ class Building : public Displayable {
 				heights.push_back( height );
 				int person = rand()%4;
 				if (person == 1) {
-					Catcher *c = new Catcher(x+i*50, height);
+					Catcher *c = new Catcher(x+i*50, height, i);
 					dCatcherList.push_back(c);
 					dList.push_front(c);
 				}
@@ -296,9 +301,9 @@ class Building : public Displayable {
 				heights[i] = heights[i] * newHeight / 600;
 
 			}
-			// x = x * newWidth / 800;
+			//x = x * newWidth / 800;
 			for (int i = 0; i < dCatcherList.size(); i++) {
-				dCatcherList[i]->setNewXY(dCatcherList[i]->getX() * newWidth / 800, dCatcherList[i]->getY() * newHeight/600);
+				dCatcherList[i]->setNewXY( (x+dCatcherList[i]->getIndex() *50) * newWidth/800, dCatcherList[i]->getY() * newHeight/600);
 			}
 		}
 
@@ -499,15 +504,15 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 
 			for (int i = 0; i < dCatcherList.size(); i++) {
 				int dCatcherX = dCatcherList[i]->getX();
-				int dCatcherY = dCatcherList[i]->getY();
+				int dCatcherY = xInfo.height - dCatcherList[i]->getY();
 
 				if  (dCatcherX > 0 && dCatcherX < xInfo.width){
-					if ( dBombY + 20 > dCatcherY && dBombY < dCatcherY + 30
-						&& dBombX + 20 > dCatcherX && dBombX < dCatcherX + 30){
+					if ( dBombY + 20 > dCatcherY - 30 && dBombY < dCatcherY + 30
+						&& dBombX + 20 > dCatcherX - 30 && dBombX < dCatcherX + 30){
 
-						cout << dCatcherX << " " << dCatcherY << endl;
-						cout << dBombX << " " << dBombY << endl;
-						cout <<" HITTT " << endl;
+						// cout << dCatcherX << " " << dCatcherY << endl;
+						// cout << dBombX << " " << dBombY << endl;
+						cout <<" HIT " << endl;
 						dBombList[j]->remove();
 						dCatcherList[i]->remove();
 						break;
