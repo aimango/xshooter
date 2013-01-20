@@ -62,16 +62,16 @@ class Plane : public Displayable {
 
 		void setVelocityY(int dir) {
 			if (dir) {
-				velocityY += 15;
+				velocityY += 10;
 			}
 			else {
-				velocityY -= 15;
+				velocityY -= 10;
 			}
 		}
 
 		void kill (){
-			x = 100;
-			y = 100;
+			x = 50;
+			y = 50;
 			lives--;
 		}
 

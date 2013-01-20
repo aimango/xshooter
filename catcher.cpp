@@ -5,7 +5,6 @@
 #include "displayable.cpp"
 
 class Catcher : public Displayable {
-
 	public:
 		void paint(XInfo &xInfo) {
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 

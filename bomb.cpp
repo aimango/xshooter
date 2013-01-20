@@ -3,8 +3,8 @@
 
 #include "xinfo.cpp"
 #include "displayable.cpp"
-class Bomb : public Displayable {
 
+class Bomb : public Displayable {
 	public:
 		void paint(XInfo &xInfo) {
 			//TODO: need to grab initial velocity of the plane
@@ -40,4 +40,5 @@ class Bomb : public Displayable {
 		int y;
 		int speed;
 };
+
 #endif

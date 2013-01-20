@@ -54,17 +54,13 @@ string convertToString (int i) {
 	return out.str();
 }
 
-struct Game {
-
-};
-
-
+//struct game {
+int score = 0;							// keep score! 
 deque<Bomb *> dBombList;				// list of Bombs
 deque<Displayable *> dList;				// list of Displayables
-
-
-Plane plane(100, 100, 30, 20);
-Building building(600, 0); //xInfo.height
+Plane plane(50, 50, 30, 20);
+Building building(600, 0);				//xInfo.width - 200
+//};
 
 void setResizeVars(XInfo &xInfo) {
 	XWindowAttributes windowAttr;
@@ -177,7 +173,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	xInfo.window = XCreateSimpleWindow ( 
 		xInfo.display,						// display where window appears
-		DefaultRootWindow(xInfo.display), // window's parent in window tree
+		DefaultRootWindow(xInfo.display), 	// window's parent in window tree
 		hints.x, hints.y,					// upper left corner location
 		hints.width, hints.height,			// size of the window
 		Border,								// width of window's border
@@ -248,6 +244,11 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		Text numLives(10, 25, text);
 		numLives.paint(xInfo);
 
+		// indicate current score
+		text = "SCORE: "+convertToString(score);
+		Text scoring(10, 40, text);
+		scoring.paint(xInfo);
+
 		// collision detection - bombs & catchers
 		for (int j = 0; j< (int)dBombList.size(); j++) {
 			int dBombX = dBombList[j]->getX();
@@ -261,12 +262,13 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 				int dCatcherY = xInfo.height - dCatcherList[i]->getY();
 
 				if  (dCatcherX > -15 && dCatcherX < xInfo.width
-					&& dBombY + 20 > dCatcherY && dBombY < dCatcherY + 30
-					&& dBombX + 20 > dCatcherX && dBombX < dCatcherX + 30){
+					&& dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
+					&& dBombX + 10 > dCatcherX && dBombX - 10 < dCatcherX + 30){
 
 					// cout << dCatcherX << " " << dCatcherY << endl;
 					// cout << dBombX << " " << dBombY << endl;
 					cout <<" HIT " << endl;
+					score ++;
 					dBombList[j]->remove();
 					dCatcherList[i]->remove();
 					break;
@@ -387,7 +389,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				numBombs--;
 				if (numBombs >= 0){
 					Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-					dList.push_back(bomb);
+					dList.push_front(bomb);
 					dBombList.push_front(bomb);
 				} 
 				break;
@@ -453,7 +455,6 @@ void eventLoop(XInfo &xInfo) {
 
 	deque<Catcher *> leCatchers = building.getCatcherList();
 	for (int i = 0; i < (int)leCatchers.size() ; i++) {
-		cout <<"addy" <<endl;
 		dList.push_front(leCatchers[i]);
 	}
 
@@ -503,7 +504,6 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-
 	for (int i = 0; i < (int)dList.size(); i++) {
 		delete dList[i];
 	}
@@ -511,7 +511,7 @@ int main ( int argc, char *argv[] ) {
 		delete dBombList[i];
 	}
 
-	//	delete xInfo.display; ??!!
+	//	delete xInfo.display; 
 	dList.clear();
 	dBombList.clear();
 }

@@ -6,7 +6,6 @@
 #include <deque>
 #include <cstdlib>
 
-
 class Building : public Displayable {
 	public:
 		Building(int x, int y): x(x), y(y) {
@@ -52,7 +51,6 @@ class Building : public Displayable {
 		void setNewXY(int newWidth, int newHeight){
 			for (int i = 0; i < (int) heights.size(); i++) {
 				heights[i] = heights[i] * newHeight / 600;
-
 			}
 			//x = x * newWidth / 800;
 			for (int i = 0; i < (int) dCatcherList.size(); i++) {
