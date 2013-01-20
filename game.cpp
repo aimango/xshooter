@@ -1,17 +1,25 @@
+/**
+ * Elisa Lou e3lou 20372456
+ * CS 349 A01 - X Side Scroller
+ */
+
 #include <iostream>
-#include <vector>
 #include <deque>
 #include <cstring>
-#include <cstdlib>
 #include <sys/time.h>
-#include <math.h>
-#include <stdio.h>
 #include <sstream>
-/*
- * Header files for X functions
- */
+
+// X functions
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
+
+// my classes
+#include "xinfo.cpp"
+#include "catcher.cpp"
+#include "bomb.cpp"
+#include "text.cpp"
+#include "plane.cpp"
+#include "building.cpp"
 
 using namespace std;
 
@@ -25,24 +33,11 @@ using namespace std;
 // memory dealloc - better?
 // game pausing - done ish
 // splash screen - need to fig out how to increase font
-// need better MVC structure **
+// need better MVC structure ** - YAAAAAA
 
 const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 30;
-/*
- * Information to draw on the window.
- */
-struct XInfo {
-	int height;
-	int width;
-	Display *display;
-	int screen;
-	Window window;
-	GC gc[4];
-	XFontStruct *font;
-};
-
 
 /*
  * Function to put out a message on error exits.
@@ -59,266 +54,14 @@ string convertToString (int i) {
 	return out.str();
 }
 
+struct Game {
 
-/*
- * An abstract class representing displayable things. 
- */
-class Displayable {
-	public:
-		virtual void paint(XInfo &xInfo) = 0;
-};
-
-class Text : public Displayable {  
-	public:
-	virtual void paint(XInfo &xinfo)
-	{  
-		XDrawString( xinfo.display, xinfo.window, xinfo.gc[2], 
-	       this->x, this->y, this->s.c_str(), this->s.length() );
-	}
-
-	// constructor
-	Text(int x, int y, string s):x(x), y(y), s(s)  {}
-
-	private:
-	int x;
-	int y;
-	string s;
-};
-
-
-class Plane : public Displayable {
-	public:
-		virtual void paint(XInfo &xInfo) {
-			/* draw a small triangle at the top-left corner of the window. */
-			/* the triangle is made of a set of consecutive lines, whose   */
-			/* end-point pixels are specified in the 'points' array.       */
-			// TODO not sure how to set thickness of lines
-
-			x += velocityX;
-			if (x < 0) {
-				x = 0;
-			} else if (x > xInfo.width) {
-				x = xInfo.width;
-			}
-
-			y += velocityY;
-			if (y < 0) {
-				y = 0;
-			} else if (y > xInfo.height) {
-				y = xInfo.height;
-			}
-
-			XPoint points[] = {
-					{x-30, y-15},
-					{x+0, y+30},
-					{x-30, y-15},
-					{x-30, y-15}
-				};
-			int npoints = sizeof(points)/sizeof(XPoint);
-			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
-
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width*xInfo.width/800, height*xInfo.height/600, 0, 360*64);
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30*xInfo.width/800, 10*xInfo.height/600);
-		}
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		int getLives(){
-			return lives;
-		}
-
-		void setVelocityX(int dir) {
-			if (dir) {
-				velocityX += 10;
-			}
-			else {
-				velocityX -= 10;
-			}
-		}
-
-		void setVelocityY(int dir) {
-			if (dir) {
-				velocityY += 15;
-			}
-			else {
-				velocityY -= 15;
-			}
-		}
-
-		void kill (){
-			x = 100;
-			y = 100;
-			lives--;
-		}
-
-		// constructor
-		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
-			velocityX = 0;
-			velocityY = 0;
-			lives = 3;
-		}
-
-	private:
-		int x;
-		int y;
-		int width;
-		int height;
-		int velocityX;
-		int velocityY;
-		int lives;
-};
-
-class Bomb : public Displayable {
-
-	public:
-		void paint(XInfo &xInfo) {
-			//TODO: need to grab initial velocity of the plane
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 
-				20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
-		}
-
-		void move(XInfo &xInfo) {
-			y = y + speed;
-			x = x - speed;
-		}
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		void remove(){
-			x= -100;
-			y= -100;
-			speed = 0;
-		}
-
-		Bomb(int x, int y): x(x), y(y) {
-			speed = 5;
-		}
-
-	private:
-		int x;
-		int y;
-		int speed;
-};
-
-
-class Catcher : public Displayable {
-
-	public:
-		void paint(XInfo &xInfo) {
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-				x + 10, xInfo.height - y - 15, 
-				30, 30, 0, 360*64);
-		}
-
-		void move(XInfo &xInfo) {
-			x -= speed * xInfo.width/800;
-		}
-
-		int getX() {
-			return x;
-		}
-
-		int getY() {
-			return y;
-		}
-
-		int getIndex() {
-			return buildingIndex;
-		}
-
-		void setNewXY(int x, int y){
-			this->x = x;
-			this->y = y;
-		}
-		void remove(){
-			x= -100;
-			y= -100;
-			speed = 0;
-		}
-
-		Catcher(int x, int y, int buildingIndex): x(x), y(y), buildingIndex(buildingIndex) {
-			speed = 5;
-		}
-
-	private:
-		int x;
-		int y;
-		int speed;
-		int buildingIndex;
 };
 
 
 deque<Bomb *> dBombList;				// list of Bombs
-deque<Catcher *> dCatcherList; 			// list of Catchers
 deque<Displayable *> dList;				// list of Displayables
 
-class Building : public Displayable {
-	public:
-		Building(int x, int y): x(x), y(y) {
-			speed = 5;
-			for (int i = 0 ; i < 150; i++) {
-				int height = rand() % 400 + 50;
-				heights.push_back( height );
-				int person = rand()%4;
-				if (person == 1) {
-					Catcher *c = new Catcher(x+i*50, height, i);
-					dCatcherList.push_back(c);
-					dList.push_front(c);
-				}
-
-			}
-		}
-
-		virtual void paint(XInfo &xInfo) {
-			int start = x > 0 ? 0 : (0-x)/ 50;
-			for (int i = start; i < start + xInfo.width/50 + 2; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-					x + i * 50, y + xInfo.height - heights[i], 
-					50, heights[i]);
-			}
-		}
-
-		void move(XInfo &xInfo) {
-			x -= speed*xInfo.width/800;
-		}
-
-		int getX() {
-			return x;
-		}
-
-		deque<int> getHeights(){
-			return heights;
-		}
-
-		void setNewXY(int newWidth, int newHeight){
-			for (int i = 0; i < heights.size(); i++) {
-				heights[i] = heights[i] * newHeight / 600;
-
-			}
-			//x = x * newWidth / 800;
-			for (int i = 0; i < dCatcherList.size(); i++) {
-				dCatcherList[i]->setNewXY( (x+dCatcherList[i]->getIndex() *50) * newWidth/800, dCatcherList[i]->getY() * newHeight/600);
-			}
-		}
-
-	private:
-		int x;
-		int y;
-		int speed;
-		deque<int> heights;
-};
 
 Plane plane(100, 100, 30, 20);
 Building building(600, 0); //xInfo.height
@@ -434,7 +177,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	xInfo.window = XCreateSimpleWindow ( 
 		xInfo.display,						// display where window appears
-		DefaultRootWindow( xInfo.display ), // window's parent in window tree
+		DefaultRootWindow(xInfo.display), // window's parent in window tree
 		hints.x, hints.y,					// upper left corner location
 		hints.width, hints.height,			// size of the window
 		Border,								// width of window's border
@@ -491,7 +234,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 
 		//re-draws the backgound
 		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
-		for (int i = 0; i < dList.size(); i++) {
+		for (int i = 0; i < (int)dList.size(); i++) {
 			dList[i]->paint(xInfo);
 		}
 
@@ -506,13 +249,14 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		numLives.paint(xInfo);
 
 		// collision detection - bombs & catchers
-		for (int j = 0; j< dBombList.size(); j++) {
+		for (int j = 0; j< (int)dBombList.size(); j++) {
 			int dBombX = dBombList[j]->getX();
 			int dBombY = dBombList[j]->getY();
 			if (dBombX < -50 || dBombY > xInfo.width + 50 || dBombX < building.getX())
 				continue;
 
-			for (int i = 0; i < dCatcherList.size(); i++) {
+			deque<Catcher *> dCatcherList = building.getCatcherList();
+			for (int i = 0; i < (int)dCatcherList.size(); i++) {
 				int dCatcherX = dCatcherList[i]->getX();
 				int dCatcherY = xInfo.height - dCatcherList[i]->getY();
 
@@ -679,10 +423,12 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 void handleAnimation(XInfo &xInfo, int splash) {
 	if (!splash) {
 		building.move(xInfo);
-		for (int i = 0; i< dCatcherList.size(); i++){
+
+		deque<Catcher *> dCatcherList = building.getCatcherList();
+		for (int i = 0; i< (int)dCatcherList.size(); i++){
 			dCatcherList[i]->move(xInfo);
 		}
-		for (int i = 0; i < dBombList.size(); i++){
+		for (int i = 0; i < (int)dBombList.size(); i++){
 			dBombList[i]->move(xInfo);
 		}
 	}
@@ -701,8 +447,15 @@ void eventLoop(XInfo &xInfo) {
 	int numBombs = 50;
 
 	// Add stuff to paint to the display list
+
 	dList.push_back(&building);
 	dList.push_front(&plane);
+
+	deque<Catcher *> leCatchers = building.getCatcherList();
+	for (int i = 0; i < (int)leCatchers.size() ; i++) {
+		cout <<"addy" <<endl;
+		dList.push_front(leCatchers[i]);
+	}
 
 	while(true) {
 		if (XPending(xInfo.display) > 0) {
@@ -751,11 +504,11 @@ int main ( int argc, char *argv[] ) {
 	XCloseDisplay(xInfo.display);
 
 
-	for (int i = 0; i < dList.size(); i++) {
+	for (int i = 0; i < (int)dList.size(); i++) {
 		delete dList[i];
 	}
-	for (int i = 0; i < dBombList.size(); i++) {
-	 	delete dBombList[i];
+	for (int i = 0; i < (int)dBombList.size(); i++) {
+		delete dBombList[i];
 	}
 
 	//	delete xInfo.display; ??!!
