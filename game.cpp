@@ -17,13 +17,15 @@ using namespace std;
 
 
 // TODO:
-// collision detection
-// 'catchers' on the buildings
-// keyboard acceleration - doneish
-// memory dealloc - figure out how to avoid ptrs.. 
+// resizing fix - easier to use the ratio in the repaint
+// collision detection - done
+// 3 lives implementation
+// 'catchers' on the buildings - done
+// keyboard acceleration - done
+// memory dealloc - better?
 // game pausing - done ish
 // splash screen - need to fig out how to increase font
-// need better MVC structure
+// need better MVC structure **
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -45,7 +47,7 @@ struct XInfo {
 /*
  * Function to put out a message on error exits.
  */
-void error( string msg ) {
+void error (string msg) {
 	cerr << msg << endl;
 	exit(0);
 }
@@ -127,12 +129,8 @@ class Plane : public Displayable {
 			return y;
 		}
 
-		int getVelocityX() {
-			return velocityX;
-		}
-
-		int getVelocityY() {
-			return velocityY;
+		int getLives(){
+			return lives;
 		}
 
 		void setVelocityX(int dir) {
@@ -153,10 +151,17 @@ class Plane : public Displayable {
 			}
 		}
 
+		void kill (){
+			x = 100;
+			y = 100;
+			lives--;
+		}
+
 		// constructor
 		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
 			velocityX = 0;
 			velocityY = 0;
+			lives = 3;
 		}
 
 	private:
@@ -166,6 +171,7 @@ class Plane : public Displayable {
 		int height;
 		int velocityX;
 		int velocityY;
+		int lives;
 };
 
 class Bomb : public Displayable {
@@ -277,7 +283,7 @@ class Building : public Displayable {
 
 		virtual void paint(XInfo &xInfo) {
 			int start = x > 0 ? 0 : (0-x)/ 50;
-			for (int i = start; i < (start + 18) * xInfo.width/800; i++) {
+			for (int i = start; i < start + xInfo.width/50 + 2; i++) {
 				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
 					x + i * 50, y + xInfo.height - heights[i], 
 					50, heights[i]);
@@ -292,8 +298,8 @@ class Building : public Displayable {
 			return x;
 		}
 
-		int getY() {
-			return y;
+		deque<int> getHeights(){
+			return heights;
 		}
 
 		void setNewXY(int newWidth, int newHeight){
@@ -314,7 +320,7 @@ class Building : public Displayable {
 		deque<int> heights;
 };
 
-Plane plane(100, 100, 50, 30);
+Plane plane(100, 100, 30, 20);
 Building building(600, 0); //xInfo.height
 
 void setResizeVars(XInfo &xInfo) {
@@ -396,15 +402,16 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSizeHints hints;
 	unsigned long black;
 
-	srand ( time(NULL) );
+	// seed the random # generator
+	srand (time(NULL));
 
 	/*
 	 * Display opening uses the DISPLAY	environment variable.
 	 * It can go wrong if DISPLAY isn't set, or you don't have permission.
 	 */	
-	xInfo.display = XOpenDisplay( "" );
-	if ( !xInfo.display )	{
-		error( "Can't open display." );
+	xInfo.display = XOpenDisplay( ":0" );
+	if (!xInfo.display)	{
+		error("Can't open display.");
 	}
 	
 	xInfo.width = 800;
@@ -425,7 +432,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	hints.min_height = 400;
 	hints.flags = PPosition | PSize;
 
-	xInfo.window = XCreateSimpleWindow( 
+	xInfo.window = XCreateSimpleWindow ( 
 		xInfo.display,						// display where window appears
 		DefaultRootWindow( xInfo.display ), // window's parent in window tree
 		hints.x, hints.y,					// upper left corner location
@@ -458,8 +465,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 	// masks
 	XSelectInput(xInfo.display, xInfo.window, 
-		ButtonPressMask | KeyPressMask | KeyReleaseMask |
-		EnterWindowMask | LeaveWindowMask | ExposureMask);
+		ButtonPressMask | KeyPressMask | KeyReleaseMask | ExposureMask);
 
 	/*
 	 * Put the window on the screen.
@@ -490,35 +496,58 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		}
 
 		// indicate # bombs left
-		string text = numBombs > 0 ? "Number of Bombs: " + convertToString(numBombs) : "No more bombs!";
+		string text = numBombs>0 ? "Number of Bombs: "+convertToString(numBombs) : "No more bombs!";
 		Text numBombs(10, 10, text);
 		numBombs.paint(xInfo);
 
-		// collision detection > <
+		// indicate # lives left
+		text = plane.getLives() >0 ? "Number of Lives: "+convertToString(plane.getLives()) : "No more lives! GAME OVER";
+		Text numLives(10, 25, text);
+		numLives.paint(xInfo);
 
+		// collision detection - bombs & catchers
 		for (int j = 0; j< dBombList.size(); j++) {
 			int dBombX = dBombList[j]->getX();
 			int dBombY = dBombList[j]->getY();
-			if (dBombX < 0 || dBombY > xInfo.width || dBombX < building.getX())
+			if (dBombX < -50 || dBombY > xInfo.width + 50 || dBombX < building.getX())
 				continue;
 
 			for (int i = 0; i < dCatcherList.size(); i++) {
 				int dCatcherX = dCatcherList[i]->getX();
 				int dCatcherY = xInfo.height - dCatcherList[i]->getY();
 
-				if  (dCatcherX > 0 && dCatcherX < xInfo.width){
-					if ( dBombY + 20 > dCatcherY - 30 && dBombY < dCatcherY + 30
-						&& dBombX + 20 > dCatcherX - 30 && dBombX < dCatcherX + 30){
+				if  (dCatcherX > -15 && dCatcherX < xInfo.width
+					&& dBombY + 20 > dCatcherY && dBombY < dCatcherY + 30
+					&& dBombX + 20 > dCatcherX && dBombX < dCatcherX + 30){
 
-						// cout << dCatcherX << " " << dCatcherY << endl;
-						// cout << dBombX << " " << dBombY << endl;
-						cout <<" HIT " << endl;
-						dBombList[j]->remove();
-						dCatcherList[i]->remove();
-						break;
-					}
+					// cout << dCatcherX << " " << dCatcherY << endl;
+					// cout << dBombX << " " << dBombY << endl;
+					cout <<" HIT " << endl;
+					dBombList[j]->remove();
+					dCatcherList[i]->remove();
+					break;
+					
 				}
 			}
+		}
+
+		//collision detected - plane and buildings
+		int buildingX = building.getX();
+		deque<int> heights = building.getHeights();
+		int start = buildingX > 0 ? 0 : (0-buildingX)/ 50;
+		int dPlaneX = plane.getX();
+		int dPlaneY = plane.getY();
+		for (int i = start; i < start + xInfo.width/50 + 2; i++) {
+
+			if (dPlaneY + 20 > xInfo.height - heights[i] &&
+				dPlaneX + 20 > buildingX + i * 50 && dPlaneX < buildingX + 50 * (i+1) ) {
+					cout << "Plane crashed into building!" << endl;
+					cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
+					cout << dPlaneX << " " << dPlaneY << endl;
+					plane.kill();
+					break;
+			}
+
 		}
 
 		XFlush( xInfo.display );
@@ -647,7 +676,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 	}
 }
 
-void handleAnimation(XInfo &xInfo, int inside, int splash) {
+void handleAnimation(XInfo &xInfo, int splash) {
 	if (!splash) {
 		building.move(xInfo);
 		for (int i = 0; i< dCatcherList.size(); i++){
@@ -668,7 +697,6 @@ unsigned long now() { // change this timer ...
 void eventLoop(XInfo &xInfo) {	
 	XEvent event;
 	unsigned long lastRepaint = 0;
-	int inside = 0;
 	int splash = 1;
 	int numBombs = 50;
 
@@ -689,12 +717,6 @@ void eventLoop(XInfo &xInfo) {
 				case KeyRelease:
 					handleKeyRelease(xInfo, event);
 					break;
-				case EnterNotify:
-					inside = 1;
-					break;
-				case LeaveNotify:
-					inside = 0;
-					break;
 				case Expose:
 					cout << "resizing" << endl;
 					handleResizing(xInfo);
@@ -704,7 +726,7 @@ void eventLoop(XInfo &xInfo) {
 		
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
-			handleAnimation(xInfo, inside, splash);
+			handleAnimation(xInfo, splash);
 			repaint(xInfo, splash, numBombs);
 			lastRepaint = now();
 		}
