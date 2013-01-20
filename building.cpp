@@ -16,24 +16,23 @@ class Building : public Displayable {
 				int person = rand()%4;
 				if (person == 1) {
 					Catcher *c = new Catcher(x+i*50, height, i);
-					dCatcherList.push_back(c);
-					
+					dCatcherList.push_back(c);	
 				}
 
 			}
 		}
 
 		virtual void paint(XInfo &xInfo) {
-			int start = x > 0 ? 0 : (0-x)/ 50;
+			int start = x>0 ? 0 : (0-x)/50;
 			for (int i = start; i < start + xInfo.width/50 + 2; i++) {
 				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-					x + i * 50, y + xInfo.height - heights[i], 
-					50, heights[i]);
+					x + i*50*xInfo.width/800, y + xInfo.height - heights[i]*xInfo.height/600, 
+					50*xInfo.width/800, heights[i]*xInfo.height/600);
 			}
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed*xInfo.width/800;
+			x -= speed * xInfo.width/800;
 		}
 
 		int getX() {
@@ -48,15 +47,15 @@ class Building : public Displayable {
 			return dCatcherList;
 		}
 
-		void setNewXY(int newWidth, int newHeight){
-			for (int i = 0; i < (int) heights.size(); i++) {
-				heights[i] = heights[i] * newHeight / 600;
-			}
-			//x = x * newWidth / 800;
-			for (int i = 0; i < (int) dCatcherList.size(); i++) {
-				dCatcherList[i]->setNewXY( (x+dCatcherList[i]->getIndex() *50) * newWidth/800, dCatcherList[i]->getY() * newHeight/600);
-			}
-		}
+		// void setNewXY(int newWidth, int newHeight){
+		// 	for (int i = 0; i < (int) heights.size(); i++) {
+		// 		heights[i] = heights[i] * newHeight / 600;
+		// 	}
+		// 	//x = x * newWidth / 800;
+		// 	for (int i = 0; i < (int) dCatcherList.size(); i++) {
+		// 		dCatcherList[i]->setNewXY( (x+dCatcherList[i]->getIndex() *50) * newWidth/800, dCatcherList[i]->getY() * newHeight/600);
+		// 	}
+		// }
 
 	private:
 		int x;

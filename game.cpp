@@ -25,15 +25,17 @@ using namespace std;
 
 
 // TODO:
-// resizing fix - easier to use the ratio in the repaint
-// collision detection - done
-// 3 lives implementation
-// 'catchers' on the buildings - done
-// keyboard acceleration - done
+// resizing fix - collision detection will need to be updated too.
 // memory dealloc - better?
-// game pausing - done ish
+// create game over screen
 // splash screen - need to fig out how to increase font
-// need better MVC structure ** - YAAAAAA
+// need better MVC structure - use header files too
+
+// collision detection - done
+// 3 lives implementation - done
+// catchers on the buildings - done
+// keyboard acceleration - done
+// game pausing - done
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -71,14 +73,12 @@ void setResizeVars(XInfo &xInfo) {
 
 void handleResizing(XInfo &xInfo){
 	setResizeVars(xInfo);
-	building.setNewXY(xInfo.width, xInfo.height);
+	//building.setNewXY(xInfo.width, xInfo.height);
 
 	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
-/** 
- * Set up colors
- */ 
+// set up GC colors
 void setGCColors(XInfo &xInfo) {
 
 	// use midnight blue 
@@ -113,6 +113,8 @@ void setGCColors(XInfo &xInfo) {
 	XSetForeground(xInfo.display, xInfo.gc[3], pink.pixel);
 }
 
+
+// hide cursor
 void makeBlankCursor(XInfo &xInfo) {
 	/* vars to make blank cursor */
 	XColor dummy;
@@ -181,13 +183,13 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		black );							// window background colour
 		
 	XSetStandardProperties(
-		xInfo.display,		// display containing the window
-		xInfo.window,		// window whose properties are set
-		"Plane",			// window's title
-		"Plane",			// icon's title
-		None,				// pixmap for the icon
-		argv, argc,			// applications command line args
-		&hints );			// size hints for the window
+		xInfo.display,				// display containing the window
+		xInfo.window,				// window whose properties are set
+		"Side Scrolling Game",		// window's title
+		"Plane",					// icon's title
+		None,						// pixmap for the icon
+		argv, argc,					// applications command line args
+		&hints );					// size hints for the window
 
 	/* 
 	 * Create Graphics Contexts
@@ -198,8 +200,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
 		XSetLineAttributes(xInfo.display, xInfo.gc[i], 1, LineSolid, CapButt, JoinRound);
 	}
-
 	setGCColors(xInfo);
+	
 	makeBlankCursor(xInfo);
 
 	// masks
@@ -210,7 +212,6 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	 * Put the window on the screen.
 	 */
 	XMapRaised( xInfo.display, xInfo.window );
-	
 	XFlush(xInfo.display);
 	//sleep(2);	// let server get set up before sending drawing commands
 }
@@ -267,7 +268,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 
 					// cout << dCatcherX << " " << dCatcherY << endl;
 					// cout << dBombX << " " << dBombY << endl;
-					cout <<" HIT " << endl;
+					cout <<" Hit :) " << endl;
 					score ++;
 					dBombList[j]->remove();
 					dCatcherList[i]->remove();
@@ -288,8 +289,8 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 			if (dPlaneY + 20 > xInfo.height - heights[i] &&
 				dPlaneX + 20 > buildingX + i * 50 && dPlaneX < buildingX + 50 * (i+1) ) {
 					cout << "Plane crashed into building!" << endl;
-					cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
-					cout << dPlaneX << " " << dPlaneY << endl;
+					// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
+					// cout << dPlaneX << " " << dPlaneY << endl;
 					plane.kill();
 					break;
 			}
@@ -449,7 +450,6 @@ void eventLoop(XInfo &xInfo) {
 	int numBombs = 50;
 
 	// Add stuff to paint to the display list
-
 	dList.push_back(&building);
 	dList.push_front(&plane);
 

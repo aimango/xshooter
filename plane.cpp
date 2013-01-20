@@ -6,6 +6,11 @@
 
 class Plane : public Displayable {
 	public:
+		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
+			velocityX = velocityY = 0;
+			lives = 3;
+		}
+
 		virtual void paint(XInfo &xInfo) {
 			/* draw a small triangle at the top-left corner of the window. */
 			/* the triangle is made of a set of consecutive lines, whose   */
@@ -27,16 +32,18 @@ class Plane : public Displayable {
 			}
 
 			XPoint points[] = {
-					{x-30, y-15},
-					{x+0, y+30},
-					{x-30, y-15},
-					{x-30, y-15}
-				};
+				{x-30, y-15},
+				{x+0, y+30},
+				{x-30, y-15},
+				{x-30, y-15}
+			};
 			int npoints = sizeof(points)/sizeof(XPoint);
 			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, width*xInfo.width/800, height*xInfo.height/600, 0, 360*64);
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 30*xInfo.width/800, 10*xInfo.height/600);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 
+				width*xInfo.width/800, height*xInfo.height/600, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 
+				30*xInfo.width/800, 10*xInfo.height/600);
 		}
 
 		int getX() {
@@ -73,13 +80,6 @@ class Plane : public Displayable {
 			x = 50;
 			y = 50;
 			lives--;
-		}
-
-		// constructor
-		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
-			velocityX = 0;
-			velocityY = 0;
-			lives = 3;
 		}
 
 	private:
