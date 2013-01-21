@@ -39,6 +39,9 @@ class Building : public Displayable {
 			return x;
 		}
 
+		void resetX(int x){
+			this->x = x;
+		}
 		std::deque<int> getHeights(){
 			return heights;
 		}

@@ -92,7 +92,6 @@ void setGCColors(XInfo &xInfo) {
 	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
 
 	// use hot pink 
-	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 	XColor purple;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
 	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &purple, &purple);
@@ -132,7 +131,7 @@ void makeBlankCursor(XInfo &xInfo) {
 	XDefineCursor(xInfo.display, xInfo.window, cursor);
 
 	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
-	//XUndefineCursor(xInfo.display, xInfo.window);
+	// XUndefineCursor(xInfo.display, xInfo.window);
 
 }
 
@@ -208,6 +207,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | KeyReleaseMask | ExposureMask);
 
+	XAutoRepeatOff(xInfo.display);
 	/*
 	 * Put the window on the screen.
 	 */
@@ -234,7 +234,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 	else if (splash){
 		string name = "Elisa Lou 456.";
 		string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
-		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
+		string lineTwo = "Press c to start gameplay. Press q to terminate the game at any time.";
 
 		XClearWindow (xInfo.display, xInfo.window);
 		setResizeVars(xInfo);
@@ -331,54 +331,33 @@ void handleButtonPress(XInfo &xInfo, XEvent &event) {
 }
 
 void handleKeyRelease(XInfo &xInfo, XEvent &event) {
-	
-	// deleting auto-repeated keypress events:
-	// from http://stackoverflow.com/questions/2100654/ignore-auto-repeat-in-x11-applications
-	int isRetriggered = 0;
+	KeySym key;
+	char text[BufferSize];
 
-	if (XEventsQueued(xInfo.display, QueuedAfterReading)) {
-		XEvent peekEvent;
-		XPeekEvent(xInfo.display, &peekEvent);
-
-		if (peekEvent.type == KeyPress && peekEvent.xkey.time == event.xkey.time &&
-			peekEvent.xkey.keycode == event.xkey.keycode){ 
-
-			// remove retriggered KeyPress event
-			XNextEvent (xInfo.display, &event);
-			isRetriggered = 1;
-		}
-	}
-
-	if (!isRetriggered) {
-
-		KeySym key;
-		char text[BufferSize];
-
-		int i = XLookupString( 
-			(XKeyEvent *)&event, 	// the keyboard event
-			text, 					// buffer when text will be written
-			BufferSize, 			// size of the text buffer
-			&key, 					// workstation-independent key symbol
-			NULL );					// pointer to a composeStatus structure (unused)
-		if ( i == 1) {
-			// printf("Got key release -- %c\n", text[0]);
-			switch (text[0]){
-				case 'w': {
-					plane.setVelocityY(1);
-					break;
-				}
-				case 'a': {
-					plane.setVelocityX(1);
-					break;
-				}
-				case 's': {
-					plane.setVelocityY(0);
-					break;
-				}
-				case 'd': {
-					plane.setVelocityX(0);
-					break;
-				}
+	int i = XLookupString( 
+		(XKeyEvent *)&event, 	// the keyboard event
+		text, 					// buffer when text will be written
+		BufferSize, 			// size of the text buffer
+		&key, 					// workstation-independent key symbol
+		NULL );					// pointer to a composeStatus structure (unused)
+	if ( i == 1) {
+		// printf("Got key release -- %c\n", text[0]);
+		switch (text[0]){
+			case 'w': {
+				plane.setVelocityY(1);
+				break;
+			}
+			case 'a': {
+				plane.setVelocityX(1);
+				break;
+			}
+			case 's': {
+				plane.setVelocityY(0);
+				break;
+			}
+			case 'd': {
+				plane.setVelocityX(0);
+				break;
 			}
 		}
 	}
@@ -426,6 +405,12 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				break;
 			}
 			case 'c': {
+				if (plane.getLives() <= 0){ // faack, have to reset everything
+					plane.reset();
+					numBombs = 50;
+					score = 0;
+					building.resetX(600);
+				}
 				splash = 0;
 				break;
 			}

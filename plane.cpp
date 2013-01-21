@@ -58,6 +58,10 @@ class Plane : public Displayable {
 			return lives;
 		}
 
+		void reset(){
+			lives = 3;
+		}
+
 		void setVelocityX(int dir) {
 			if (dir) {
 				velocityX += 10;
