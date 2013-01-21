@@ -27,7 +27,7 @@ using namespace std;
 // TODO:
 // resizing fix - collision detection will need to be updated too.
 // memory dealloc - better?
-// create game over screen
+// create `game over` screen
 // splash screen - need to fig out how to increase font
 // need better MVC structure - use header files too
 
@@ -221,7 +221,31 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
  * Function to repaint a display list
  */
 void repaint( XInfo &xInfo, int splash, int numBombs) {
-	if (!splash) {
+	if (plane.getLives() <= 0) {
+		string lineOne = "GAME OVER.";
+		string lineTwo = "Press c to play again or q to quit the game.";
+		XClearWindow (xInfo.display, xInfo.window);
+		//setResizeVars(xInfo);
+		Text line(xInfo.width/2-40, xInfo.height/2, lineOne);
+		Text line2(xInfo.width/2-135, xInfo.height/2 + 20, lineTwo);
+		line.paint(xInfo);
+		line2.paint(xInfo);
+	}
+	else if (splash){
+		string name = "Elisa Lou 456.";
+		string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
+		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
+
+		XClearWindow (xInfo.display, xInfo.window);
+		setResizeVars(xInfo);
+		Text line0(xInfo.width/2-40, xInfo.height/2-20, name);
+		Text line(xInfo.width/2-200, xInfo.height/2, lineOne);
+		Text line2(xInfo.width/2-180, xInfo.height/2 + 20, lineTwo);
+		line0.paint(xInfo);
+		line.paint(xInfo);
+		line2.paint(xInfo);
+	}
+	else {
 		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
 		
 		XWindowAttributes windowInfo;
@@ -246,7 +270,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 		numLives.paint(xInfo);
 
 		// indicate current score
-		text = "SCORE: "+convertToString(score);
+		text = "Score: "+convertToString(score);
 		Text scoring(10, 40, text);
 		scoring.paint(xInfo);
 
@@ -299,16 +323,6 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 
 		XFlush( xInfo.display );
 
-	} else {
-		string lineOne = "Elisa Lou 456. Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
-		string lineTwo = "Press c to continue. Press q to terminate the game at any time.";
-
-		XClearWindow (xInfo.display, xInfo.window);
-		setResizeVars(xInfo);
-		Text line(10, xInfo.height/2, lineOne);
-		Text line2(10, xInfo.height/2 + 10, lineTwo);
-		line.paint(xInfo);
-		line2.paint(xInfo);
 	}
 }
 

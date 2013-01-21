@@ -10,7 +10,7 @@ class Building : public Displayable {
 	public:
 		Building(int x, int y): x(x), y(y) {
 			speed = 5;
-			for (int i = 0 ; i < 150; i++) {
+			for (int i = 0; i < 150; i++) {
 				int height = rand() % 400 + 50;
 				heights.push_back( height );
 				int person = rand()%4;
