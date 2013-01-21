@@ -220,34 +220,42 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xInfo, int splash, int numBombs) {
+void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 	if (plane.getLives() <= 0) {
+		paused = 0;
 		string lineOne = "GAME OVER.";
 		string lineTwo = "Press c to play again or q to quit the game.";
-		XClearWindow (xInfo.display, xInfo.window);
+
 		//setResizeVars(xInfo);
+		XClearWindow (xInfo.display, xInfo.window);
 		Text line(xInfo.width/2-40, xInfo.height/2, lineOne);
 		Text line2(xInfo.width/2-135, xInfo.height/2 + 20, lineTwo);
 		line.paint(xInfo);
 		line2.paint(xInfo);
 	}
 	else if (splash){
-		string name = "Elisa Lou 456.";
-		string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
-		string lineTwo = "Press c to start gameplay. Press q to terminate the game at any time.";
-
 		XClearWindow (xInfo.display, xInfo.window);
+		if (paused) {
+			string lineZero = "Press c to continue gameplay. Press q to quit the game.";
+			Text line0(xInfo.width/2-180, xInfo.height/2-20, lineZero);
+			line0.paint(xInfo);
+		} else {
+			string lineZero = "Elisa Lou 456.";
+			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
+			string lineTwo = "Press c to start gameplay. Press q to terminate the game at any time.";
+
+			Text line0(xInfo.width/2-40, xInfo.height/2-20, lineZero);
+			Text line(xInfo.width/2-200, xInfo.height/2, lineOne);
+			Text line2(xInfo.width/2-180, xInfo.height/2 + 20, lineTwo);
+			line.paint(xInfo);
+			line2.paint(xInfo);
+			line0.paint(xInfo);
+		}
 		setResizeVars(xInfo);
-		Text line0(xInfo.width/2-40, xInfo.height/2-20, name);
-		Text line(xInfo.width/2-200, xInfo.height/2, lineOne);
-		Text line2(xInfo.width/2-180, xInfo.height/2 + 20, lineTwo);
-		line0.paint(xInfo);
-		line.paint(xInfo);
-		line2.paint(xInfo);
 	}
 	else {
 		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
-		
+		paused = 1;
 		XWindowAttributes windowInfo;
 		XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
 		unsigned int height = windowInfo.height;
@@ -318,11 +326,8 @@ void repaint( XInfo &xInfo, int splash, int numBombs) {
 					plane.kill();
 					break;
 			}
-
 		}
-
 		XFlush( xInfo.display );
-
 	}
 }
 
@@ -447,6 +452,7 @@ void eventLoop(XInfo &xInfo) {
 	unsigned long lastRepaint = 0;
 	int splash = 1;
 	int numBombs = 50;
+	int paused = 0;
 
 	// Add stuff to paint to the display list
 	dList.push_back(&building);
@@ -480,7 +486,7 @@ void eventLoop(XInfo &xInfo) {
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
 			handleAnimation(xInfo, splash);
-			repaint(xInfo, splash, numBombs);
+			repaint(xInfo, splash, numBombs, paused);
 			lastRepaint = now();
 		}
 		if (XPending(xInfo.display) == 0) {
