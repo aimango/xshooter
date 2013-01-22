@@ -31,19 +31,21 @@ class Plane : public Displayable {
 				y = xInfo.height;
 			}
 
-			XPoint points[] = {
-				{x-30, y-15},
-				{x+0, y+30},
-				{x-30, y-15},
-				{x-30, y-15}
-			};
-			int npoints = sizeof(points)/sizeof(XPoint);
-			XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
+			// XPoint points[] = {
+			// 	{x-30, y-15},
+			// 	{x+0, y+30},
+			// 	{x-30, y-15},
+			// 	{x-30, y-15}
+			// };
+			// int npoints = sizeof(points)/sizeof(XPoint);
+			// XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
-			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 
-				width*xInfo.width/800, height*xInfo.height/600, 0, 360*64);
-			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], x-15, y+10, 
-				30*xInfo.width/800, 10*xInfo.height/600);
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2],
+				(double)x*xInfo.width/800, (double)y*xInfo.height/600, 
+				(double)width*xInfo.width/800, (double)height*xInfo.height/600, 0, 360*64);
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], 
+				(double)(x-15)*xInfo.width/800, (double)(y+10)*xInfo.height/600, 
+				(double)30*xInfo.width/800, (double)10*xInfo.height/600);
 		}
 
 		int getX() {
@@ -95,12 +97,12 @@ class Plane : public Displayable {
 		}
 
 	private:
-		int x;
-		int y;
-		int width;
-		int height;
-		int velocityX;
-		int velocityY;
+		double x;
+		double y;
+		double width;
+		double height;
+		double velocityX;
+		double velocityY;
 		int lives;
 };
 

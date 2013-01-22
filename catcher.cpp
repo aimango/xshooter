@@ -15,7 +15,7 @@ class Catcher : public Displayable {
 
 		void paint(XInfo &xInfo) {
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-				x*xInfo.width/800-10, xInfo.height-y*xInfo.height/600-15, 
+				(x-10)*xInfo.width/800, (xInfo.height-y-15)*xInfo.height/600, 
 				30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
 		}
 
@@ -45,10 +45,6 @@ class Catcher : public Displayable {
 			return speed;
 		}
 
-		// void setNewXY(int x, int y){
-		// 	this->x = x;
-		// 	this->y = y;
-		// }
 		void remove(){
 			x= -100;
 			y= -100;
@@ -57,8 +53,8 @@ class Catcher : public Displayable {
 
 	private:
 		int attackRate;
-		int x;
-		int y;
+		double x;
+		double y;
 		int speed;
 };
 

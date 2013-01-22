@@ -13,10 +13,10 @@ class Bomb : public Displayable {
 		}
 
 		void paint(XInfo &xInfo) {
-			if (x > - 15 && y < xInfo.height + 15) {
-				XFillArc(xInfo.display, xInfo.window, xInfo.gc[2+fromEnemy], x, y, 
-					20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
-			}
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2+fromEnemy], 
+				x * xInfo.height/600, y * xInfo.height/600, 
+				20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
+
 		}
 
 		void move(XInfo &xInfo) {
@@ -40,10 +40,10 @@ class Bomb : public Displayable {
 		}
 
 	private:
-		int x;
-		int y;
-		int speedX;
-		int speedY;
+		double x;
+		double y;
+		double speedX;
+		double speedY;
 		int fromEnemy;
 };
 

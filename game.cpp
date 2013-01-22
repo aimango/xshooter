@@ -518,7 +518,8 @@ void handleAnimation(XInfo &xInfo, int splash) {
 			dCatcherList[i]->incrementRate();
 			int rate = dCatcherList[i]->getRate();
 			if (rate % 50 == 0) {
-				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), xInfo.height - dCatcherList[i]->getY() - 30, -10, 1);
+				Bomb *bomb = new Bomb(
+					dCatcherList[i]->getX(), xInfo.height - dCatcherList[i]->getY() - 30, -10, 1);
 				dBombList.push_back(bomb);
 			}
 		}
