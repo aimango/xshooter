@@ -6,14 +6,14 @@
 
 class Catcher : public Displayable {
 	public:
-		Catcher(int x, int y, int buildingIndex): x(x), y(y), buildingIndex(buildingIndex) {
+		Catcher(int x, int y): x(x), y(y) {
 			speed = 5;
 		}
 
 		void paint(XInfo &xInfo) {
 			if (x > - 30 && y < xInfo.height + 30) {
 				XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-					x*xInfo.width/800+10, xInfo.height-y*xInfo.height/600-15, 
+					x*xInfo.width/800+55, xInfo.height-y*xInfo.height/600-15, 
 					30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
 			}
 		}
@@ -30,10 +30,6 @@ class Catcher : public Displayable {
 			return y;
 		}
 
-		int getIndex() {
-			return buildingIndex;
-		}
-
 		// void setNewXY(int x, int y){
 		// 	this->x = x;
 		// 	this->y = y;
@@ -48,7 +44,6 @@ class Catcher : public Displayable {
 		int x;
 		int y;
 		int speed;
-		int buildingIndex;
 };
 
 #endif

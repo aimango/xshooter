@@ -2,33 +2,25 @@
 #define building_h
 
 #include "xinfo.cpp"
-#include "catcher.cpp"
+#include "displayable.cpp"
 #include <deque>
 #include <cstdlib>
 
 class Building : public Displayable {
 	public:
-		Building(int x, int y): x(x), y(y) {
+		Building(int startingX){
 			speed = 5;
-			for (int i = 0; i < 150; i++) {
-				int height = rand() % 400 + 50;
-				heights.push_back( height );
-				int person = rand()%4;
-				if (person == 1) {
-					Catcher *c = new Catcher(x+i*50, height, i);
-					dCatcherList.push_back(c);	
-				}
-
-			}
+			x = startingX;
+			y = random() % 400 + 50;
 		}
 
 		virtual void paint(XInfo &xInfo) {
-			int start = x>0 ? 0 : (0-x)/50;
-			for (int i = start; i < start + xInfo.width/50 + 2; i++) {
-				XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-					x + i*50*xInfo.width/800, y + xInfo.height - heights[i]*xInfo.height/600, 
-					50*xInfo.width/800, heights[i]*xInfo.height/600);
-			}
+			// int start = x>0 ? 0 : (0-x)/50;
+			// for (int i = start; i < start + xInfo.width/50 + 2; i++) {
+			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
+				x *xInfo.width/800, (xInfo.height - y)*xInfo.height/600, 
+				50*xInfo.width/800, y*xInfo.height/600);
+			// }
 		}
 
 		void move(XInfo &xInfo) {
@@ -39,16 +31,20 @@ class Building : public Displayable {
 			return x;
 		}
 
+		int getY() {
+			return y;
+		}
+
 		void resetX(int x){
 			this->x = x;
 		}
-		std::deque<int> getHeights(){
-			return heights;
-		}
+		// std::deque<int> getHeights(){
+		// 	return heights;
+		// }
 
-		std::deque<Catcher *> getCatcherList(){
-			return dCatcherList;
-		}
+		// std::deque<Catcher *> getCatcherList(){
+		// 	return dCatcherList;
+		// }
 
 		// void setNewXY(int newWidth, int newHeight){
 		// 	for (int i = 0; i < (int) heights.size(); i++) {
@@ -64,8 +60,8 @@ class Building : public Displayable {
 		int x;
 		int y;
 		int speed;
-		std::deque<int> heights;
-		std::deque<Catcher *> dCatcherList;
+		int height;
+		// std::deque<int> heights;
 };
 
 #endif
