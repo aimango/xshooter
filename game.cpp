@@ -294,6 +294,22 @@ void handleCollisionDetection(XInfo &xInfo) {
 	}
 
 	//collision detection - plane and bombs
+	for (int i = 0; i < (int)dBombList.size(); i++){
+		int bombX = dBombList[i]->getX();
+		int bombY = dBombList[i]->getY();
+
+		//int start = buildingX > 0 ? 0 : (0-buildingX)/ 50;
+		int dPlaneX = plane.getX();
+		int dPlaneY = plane.getY();
+		if (dPlaneY + 20 > xInfo.height - bombY &&
+			dPlaneX + 20 > bombX && dPlaneX < bombX + 50) {
+				cout << "Plane ran into bomb!" << endl;
+				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
+				// cout << dPlaneX << " " << dPlaneY << endl;
+				plane.kill();
+				break;
+		}
+	}
 }
 
 
