@@ -27,7 +27,8 @@ using namespace std;
 // TODO:
 // resizing fix - collision detection will need to be updated too.
 // memory dealloc - better?
-// create `game over` screen
+// create `game over` screen - done
+// 'new game' screen
 // splash screen - need to fig out how to increase font
 // need better MVC structure - use header files too
 
@@ -235,6 +236,13 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 	}
 }
 
+void handleBombs(XInfo &xInfo) {
+	for (int i = 0; i < (int)dBombList.size(); i++) {
+		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height)
+			dBombList.erase(dBombList.begin() + i);
+	}
+}
+
 void handleCollisionDetection(XInfo &xInfo) {
 	// collision detection - bombs & catchers
 	for (int j = 0; j< (int)dBombList.size(); j++) {
@@ -336,12 +344,11 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 		for (int i = 0; i < (int)dCatcherList.size(); i++) {
 			dCatcherList[i]->paint(xInfo);
 		}
-		for (int i = 0; i < (int)dBombList.size(); i++) {
-			dBombList[i]->paint(xInfo);
-		}
-
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->paint(xInfo);
+		}
+		for (int i = 0; i < (int)dBombList.size(); i++) {
+			dBombList[i]->paint(xInfo);
 		}
 		plane.paint(xInfo);
 
@@ -362,6 +369,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 
 		handleBuildingsAndCatchers(xInfo);
 		handleCollisionDetection(xInfo);
+		handleBombs(xInfo);
 		XFlush( xInfo.display );
 	}
 }
@@ -423,7 +431,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				numBombs--;
 				if (numBombs >= 0){
 					Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-					dBombList.push_front(bomb);
+					dBombList.push_back(bomb);
 				} 
 				break;
 			}
@@ -463,7 +471,6 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 
 void handleAnimation(XInfo &xInfo, int splash) {
 	if (!splash) {
-
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->move(xInfo);
 		}
@@ -522,7 +529,6 @@ void eventLoop(XInfo &xInfo) {
 	}
 }
 
-
 /*
  * Start executing here.
  *	 First initialize window.
@@ -536,11 +542,18 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		delete dBombList[i];
 	}
+	for (int i = 0; i < (int)dCatcherList.size(); i++) {
+		delete dCatcherList[i];
+	}
+	for (int i = 0; i < (int)dBuildingList.size(); i++) {
+		delete dBuildingList[i];
+	}
 
-	//	delete xInfo.display; 
+	//delete xInfo.display; 
 	dBombList.clear();
+	dCatcherList.clear();
+	dBuildingList.clear();
 }
