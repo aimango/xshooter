@@ -56,14 +56,12 @@ string convertToString (int i) {
 	return out.str();
 }
 
-//struct game {
 int score = 0;
+Plane plane(50, 50, 30, 20);
 deque<Bomb *> dBombList;
 deque<Catcher *> dCatcherList;
 deque<Building *> dBuildingList;
-Plane plane(50, 50, 30, 20);
-//Building building(600, 0);				//xInfo.width - 200
-//};
+
 
 void setResizeVars(XInfo &xInfo) {
 	XWindowAttributes windowAttr;
@@ -75,7 +73,6 @@ void setResizeVars(XInfo &xInfo) {
 void handleResizing(XInfo &xInfo){
 	setResizeVars(xInfo);
 	//building.setNewXY(xInfo.width, xInfo.height);
-
 	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
@@ -218,7 +215,6 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	//sleep(2);	// let server get set up before sending drawing commands
 }
 
-
 void handleBuildingsAndCatchers(XInfo &xInfo) {
 	int lastElt = dBuildingList.size()-1;
 	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < xInfo.width ) {
@@ -228,11 +224,64 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 	
 		int person = rand()%4;
 		if (person == 1) {
-			Catcher *c = new Catcher(xInfo.width, b->getY());
-			dCatcherList.push_back(c);	
+			Catcher *c = new Catcher(positionX + 20, b->getY());
+			dCatcherList.push_back(c);
+		}
+	} else if (!dBuildingList.empty() && dBuildingList[0]->getX() < -50) {
+		dBuildingList.pop_front();
+	}
+	if (!dCatcherList.empty() && dCatcherList[0]->getX() < -100){
+		dCatcherList.pop_front();
+	}
+}
+
+void handleCollisionDetection(XInfo &xInfo) {
+	// collision detection - bombs & catchers
+	for (int j = 0; j< (int)dBombList.size(); j++) {
+		int dBombX = dBombList[j]->getX();
+		int dBombY = dBombList[j]->getY();
+		if (dBombX < -50 || dBombY > xInfo.width + 50)
+			continue;
+
+		for (int i = 0; i < (int)dCatcherList.size(); i++) {
+			int dCatcherX = dCatcherList[i]->getX();
+			int dCatcherY = xInfo.height - dCatcherList[i]->getY();
+
+			if  (dCatcherX > -15 && dCatcherX < xInfo.width
+				&& dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
+				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
+
+				 cout << dCatcherX << " " << dCatcherY << endl;
+				 cout << dBombX << " " << dBombY << endl;
+				cout <<"Hit :)" << endl;
+				score ++;
+				dBombList[j]->remove();
+				dCatcherList[i]->remove();
+				break;
+				
+			}
+		}
+	}
+
+	//collision detected - plane and buildings
+	for (int i = 0; i < (int)dBuildingList.size(); i++){
+		int buildingX = dBuildingList[i]->getX();
+		int buildingY = dBuildingList[i]->getY();
+
+		//int start = buildingX > 0 ? 0 : (0-buildingX)/ 50;
+		int dPlaneX = plane.getX();
+		int dPlaneY = plane.getY();
+		if (dPlaneY + 20 > xInfo.height - buildingY &&
+			dPlaneX + 20 > buildingX && dPlaneX < buildingX + 50) {
+				cout << "Plane crashed into building!" << endl;
+				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
+				// cout << dPlaneX << " " << dPlaneY << endl;
+				plane.kill();
+				break;
 		}
 	}
 }
+
 
 /*
  * Function to repaint a display list
@@ -311,53 +360,8 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 		Text scoring(10, 40, text);
 		scoring.paint(xInfo);
 
-		// collision detection - bombs & catchers
-		for (int j = 0; j< (int)dBombList.size(); j++) {
-			int dBombX = dBombList[j]->getX();
-			int dBombY = dBombList[j]->getY();
-			if (dBombX < -50 || dBombY > xInfo.width + 50) //|| dBombX < building.getX())
-				continue;
-
-			for (int i = 0; i < (int)dCatcherList.size(); i++) {
-				int dCatcherX = dCatcherList[i]->getX();
-				int dCatcherY = xInfo.height - dCatcherList[i]->getY();
-
-				if  (dCatcherX > -15 && dCatcherX < xInfo.width
-					&& dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
-					&& dBombX + 10 > dCatcherX && dBombX - 10 < dCatcherX + 30){
-
-					// cout << dCatcherX << " " << dCatcherY << endl;
-					// cout << dBombX << " " << dBombY << endl;
-					cout <<" Hit :) " << endl;
-					score ++;
-					dBombList[j]->remove();
-					dCatcherList[i]->remove();
-					break;
-					
-				}
-			}
-		}
-
-		//collision detected - plane and buildings
-		for (int i = 0; i < (int)dBuildingList.size(); i++){
-			int buildingX = dBuildingList[i]->getX();
-			int buildingY = dBuildingList[i]->getY();
-			//deque<int> heights = dBuildingList[i].getHeights();
-
-			//int start = buildingX > 0 ? 0 : (0-buildingX)/ 50;
-			int dPlaneX = plane.getX();
-			int dPlaneY = plane.getY();
-			//for (int i = start; i < start + xInfo.width/50 + 2; i++) {
-				if (dPlaneY + 20 > xInfo.height - buildingY &&
-					dPlaneX + 20 > buildingX + i * 50 && dPlaneX < buildingX + 50 * (i+1) ) {
-						cout << "Plane crashed into building!" << endl;
-						// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
-						// cout << dPlaneX << " " << dPlaneY << endl;
-						plane.kill();
-						break;
-				}
-			//}
-		}
+		handleBuildingsAndCatchers(xInfo);
+		handleCollisionDetection(xInfo);
 		XFlush( xInfo.display );
 	}
 }
@@ -486,7 +490,6 @@ void eventLoop(XInfo &xInfo) {
 	int numBombs = 50;
 	int paused = 0;
 
-
 	while(true) {
 		if (XPending(xInfo.display) > 0) {
 			XNextEvent( xInfo.display, &event );
@@ -509,8 +512,6 @@ void eventLoop(XInfo &xInfo) {
 		
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
-			handleBuildingsAndCatchers(xInfo);
-
 			handleAnimation(xInfo, splash);
 			repaint(xInfo, splash, numBombs, paused);
 			lastRepaint = now();

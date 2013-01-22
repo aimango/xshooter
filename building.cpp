@@ -38,13 +38,7 @@ class Building : public Displayable {
 		void resetX(int x){
 			this->x = x;
 		}
-		// std::deque<int> getHeights(){
-		// 	return heights;
-		// }
 
-		// std::deque<Catcher *> getCatcherList(){
-		// 	return dCatcherList;
-		// }
 
 		// void setNewXY(int newWidth, int newHeight){
 		// 	for (int i = 0; i < (int) heights.size(); i++) {
@@ -61,7 +55,6 @@ class Building : public Displayable {
 		int y;
 		int speed;
 		int height;
-		// std::deque<int> heights;
 };
 
 #endif

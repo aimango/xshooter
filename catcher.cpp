@@ -1,6 +1,7 @@
 #ifndef catcher_h
 #define catcher_h
 
+#include <iostream>
 #include "xinfo.cpp"
 #include "displayable.cpp"
 
@@ -11,11 +12,9 @@ class Catcher : public Displayable {
 		}
 
 		void paint(XInfo &xInfo) {
-			if (x > - 30 && y < xInfo.height + 30) {
-				XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-					x*xInfo.width/800+55, xInfo.height-y*xInfo.height/600-15, 
-					30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
-			}
+			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
+				x*xInfo.width/800-10, xInfo.height-y*xInfo.height/600-15, 
+				30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
 		}
 
 		void move(XInfo &xInfo) {
