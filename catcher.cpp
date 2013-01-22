@@ -19,7 +19,7 @@ class Catcher : public Displayable {
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed * xInfo.width/800;
+			x -= speed;
 		}
 
 		int getX() {

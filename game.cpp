@@ -59,7 +59,7 @@ string convertToString (int i) {
 //struct game {
 int score = 0;							// keep score! 
 deque<Bomb *> dBombList;				// list of Bombs
-deque<Displayable *> dList;				// list of Displayables
+deque<Catcher *> dCatcherList;
 Plane plane(50, 50, 30, 20);
 Building building(600, 0);				//xInfo.width - 200
 //};
@@ -264,9 +264,19 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 
 		//re-draws the backgound
 		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
-		for (int i = 0; i < (int)dList.size(); i++) {
-			dList[i]->paint(xInfo);
+
+		/*
+		 * Repaint everything
+		 */
+		deque<Catcher *> leCatchers = building.getCatcherList();
+		for (int i = 0; i < (int)leCatchers.size(); i++) {
+			leCatchers[i]->paint(xInfo);
 		}
+		for (int i = 0; i < (int)dBombList.size() ; i++) {
+			dBombList[i]->paint(xInfo);
+		}
+		building.paint(xInfo);
+		plane.paint(xInfo);
 
 		// indicate # bombs left
 		string text = numBombs>0 ? "Number of Bombs: "+convertToString(numBombs) : "No more bombs!";
@@ -389,7 +399,6 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				numBombs--;
 				if (numBombs >= 0){
 					Bomb *bomb = new Bomb(plane.getX(), plane.getY());
-					dList.push_front(bomb);
 					dBombList.push_front(bomb);
 				} 
 				break;
@@ -455,14 +464,6 @@ void eventLoop(XInfo &xInfo) {
 	int numBombs = 50;
 	int paused = 0;
 
-	// Add stuff to paint to the display list
-	dList.push_back(&building);
-	dList.push_front(&plane);
-
-	deque<Catcher *> leCatchers = building.getCatcherList();
-	for (int i = 0; i < (int)leCatchers.size() ; i++) {
-		dList.push_front(leCatchers[i]);
-	}
 
 	while(true) {
 		if (XPending(xInfo.display) > 0) {
@@ -510,14 +511,11 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-	for (int i = 0; i < (int)dList.size(); i++) {
-		delete dList[i];
-	}
+
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		delete dBombList[i];
 	}
 
 	//	delete xInfo.display; 
-	dList.clear();
 	dBombList.clear();
 }
