@@ -6,9 +6,9 @@
 
 class Bomb : public Displayable {
 	public:
-		Bomb(int x, int y, int velocityX): x(x), y(y) {
+		Bomb(int x, int y, int velocityX, int ydir): x(x), y(y) {
 			speedX = (velocityX > 0) ? velocityX - 5 : velocityX + 5;
-			speedY = 5;
+			speedY = (ydir > 0) ? 5 : -5;
 		}
 
 		void paint(XInfo &xInfo) {

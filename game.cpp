@@ -32,7 +32,10 @@ using namespace std;
 // splash screen - need to fig out how to increase font
 // need better MVC structure - use header files too
 
-// collision detection - done
+// collision detection 
+	//bomb & plane
+// shooting from enemy
+
 // 3 lives implementation - done
 // catchers on the buildings - done
 // keyboard acceleration - done
@@ -301,14 +304,17 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 	if (plane.getLives() <= 0) {
 		paused = 0;
 		string lineOne = "GAME OVER.";
-		string lineTwo = "Press c to play again or q to quit the game.";
+		string lineTwo = "SCORE: "+convertToString(score);
+		string lineThree = "Press c to play again or q to quit the game.";
 
 		setResizeVars(xInfo);
 		XClearWindow (xInfo.display, xInfo.window);
-		Text line(xInfo.width/2-40, xInfo.height/2, lineOne);
-		Text line2(xInfo.width/2-135, xInfo.height/2 + 20, lineTwo);
+		Text line(xInfo.width/2-40, xInfo.height/2 - 20, lineOne);
+		Text line2(xInfo.width/2-40, xInfo.height/2, lineTwo);
+		Text line3(xInfo.width/2-135, xInfo.height/2 + 20, lineThree);
 		line.paint(xInfo);
 		line2.paint(xInfo);
+		line3.paint(xInfo);
 	}
 	else if (splash){
 		XClearWindow (xInfo.display, xInfo.window);
@@ -433,7 +439,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 			case 'm': {
 				numBombs--;
 				if (numBombs >= 0){
-					Bomb *bomb = new Bomb(plane.getX(), plane.getY(), plane.getVelocityX());
+					Bomb *bomb = new Bomb(plane.getX(), plane.getY(), plane.getVelocityX(), 1);
 					dBombList.push_back(bomb);
 				} 
 				break;
@@ -479,10 +485,17 @@ void handleAnimation(XInfo &xInfo, int splash) {
 		}
 		for (int i = 0; i< (int)dCatcherList.size(); i++){
 			dCatcherList[i]->move(xInfo);
+			dCatcherList[i]->incrementRate();
+			int rate = dCatcherList[i]->getRate();
+			if (rate % 50 == 0) {
+				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), xInfo.height - dCatcherList[i]->getY() - 30, -10, -1);
+				dBombList.push_back(bomb);
+			}
 		}
 		for (int i = 0; i < (int)dBombList.size(); i++){
 			dBombList[i]->move(xInfo);
 		}
+
 	}
 }
 

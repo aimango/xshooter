@@ -4,11 +4,13 @@
 #include <iostream>
 #include "xinfo.cpp"
 #include "displayable.cpp"
+#include "bomb.cpp"
 
 class Catcher : public Displayable {
 	public:
 		Catcher(int x, int y): x(x), y(y) {
 			speed = 5;
+			attackRate = 1;
 		}
 
 		void paint(XInfo &xInfo) {
@@ -29,6 +31,20 @@ class Catcher : public Displayable {
 			return y;
 		}
 
+		void incrementRate() {
+			attackRate++;
+			if (attackRate == 100)
+				attackRate = 0;
+		}
+
+		int getRate(){
+			return attackRate;
+		}
+
+		int getSpeed(){
+			return speed;
+		}
+
 		// void setNewXY(int x, int y){
 		// 	this->x = x;
 		// 	this->y = y;
@@ -40,6 +56,7 @@ class Catcher : public Displayable {
 		}
 
 	private:
+		int attackRate;
 		int x;
 		int y;
 		int speed;
