@@ -3,24 +3,27 @@
 
 #include "xinfo.cpp"
 #include "displayable.cpp"
+#include <iostream>
 #include <deque>
 #include <cstdlib>
+
+using namespace std;
 
 class Building : public Displayable {
 	public:
 		Building(int startingX){
 			speed = 5;
 			x = startingX;
-			y = random() % 400 + 50;
+			y = 40 * (rand() % 9 + 1);
 		}
 
 		virtual void paint(XInfo &xInfo) {
-			// int start = x>0 ? 0 : (0-x)/50;
-			// for (int i = start; i < start + xInfo.width/50 + 2; i++) {
+			//cout << y << endl;
+			int newy = (xInfo.height - y) * (xInfo.height / 600);
+			//cout << xInfo.height << " " << newy << endl;
 			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-				x *xInfo.width/800, (xInfo.height - y)*xInfo.height/600, 
-				50*xInfo.width/800, y*xInfo.height/600);
-			// }
+				x*xInfo.width/800, newy * xInfo.height/600, 
+				50*xInfo.width/800, (xInfo.height-newy) * xInfo.height/600);
 		}
 
 		void move(XInfo &xInfo) {
@@ -38,7 +41,6 @@ class Building : public Displayable {
 		void resetX(int x){
 			this->x = x;
 		}
-
 
 		// void setNewXY(int newWidth, int newHeight){
 		// 	for (int i = 0; i < (int) heights.size(); i++) {

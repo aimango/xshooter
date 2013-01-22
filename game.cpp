@@ -131,7 +131,6 @@ void makeBlankCursor(XInfo &xInfo) {
 
 	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
 	// XUndefineCursor(xInfo.display, xInfo.window);
-
 }
 
  /*
@@ -266,7 +265,6 @@ void handleCollisionDetection(XInfo &xInfo) {
 				dBombList[j]->remove();
 				dCatcherList[i]->remove();
 				break;
-				
 			}
 		}
 	}
@@ -300,7 +298,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 		string lineOne = "GAME OVER.";
 		string lineTwo = "Press c to play again or q to quit the game.";
 
-		//setResizeVars(xInfo);
+		setResizeVars(xInfo);
 		XClearWindow (xInfo.display, xInfo.window);
 		Text line(xInfo.width/2-40, xInfo.height/2, lineOne);
 		Text line2(xInfo.width/2-135, xInfo.height/2 + 20, lineTwo);
@@ -474,7 +472,6 @@ void handleAnimation(XInfo &xInfo, int splash) {
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->move(xInfo);
 		}
-
 		for (int i = 0; i< (int)dCatcherList.size(); i++){
 			dCatcherList[i]->move(xInfo);
 		}
