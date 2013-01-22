@@ -25,7 +25,7 @@ using namespace std;
 
 
 // TODO:
-// resizing fix - collision detection will need to be updated too.
+// resizing fix - goooood
 // memory dealloc - better?
 // create `game over` screen - done
 // 'new game' screen
@@ -326,7 +326,22 @@ void handleCollisionDetection(XInfo &xInfo) {
 	// }
 }
 
+void clearStuff(){
+	for (int i = 0; i < (int)dBombList.size(); i++) {
+		delete dBombList[i];
+	}
+	for (int i = 0; i < (int)dCatcherList.size(); i++) {
+		delete dCatcherList[i];
+	}
+	for (int i = 0; i < (int)dBuildingList.size(); i++) {
+		delete dBuildingList[i];
+	}
 
+	//delete xInfo.display; 
+	dBombList.clear();
+	dCatcherList.clear();
+	dBuildingList.clear();
+}
 /*
  * Function to repaint a display list
  */
@@ -491,11 +506,11 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				break;
 			}
 			case 'c': {
-				if (plane.getLives() <= 0){ // faack, have to reset everything
+				if (plane.getLives() <= 0){
 					plane.reset();
+					clearStuff();
 					numBombs = 50;
 					score = 0;
-					//building.resetX(600);
 				}
 				splash = 0;
 				break;
@@ -588,18 +603,5 @@ int main ( int argc, char *argv[] ) {
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
 
-	for (int i = 0; i < (int)dBombList.size(); i++) {
-		delete dBombList[i];
-	}
-	for (int i = 0; i < (int)dCatcherList.size(); i++) {
-		delete dCatcherList[i];
-	}
-	for (int i = 0; i < (int)dBuildingList.size(); i++) {
-		delete dBuildingList[i];
-	}
-
-	//delete xInfo.display; 
-	dBombList.clear();
-	dCatcherList.clear();
-	dBuildingList.clear();
+	clearStuff();
 }
