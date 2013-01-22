@@ -201,13 +201,14 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	}
 	setGCColors(xInfo);
 	
-	makeBlankCursor(xInfo);
-
 	// masks
 	XSelectInput(xInfo.display, xInfo.window, 
 		ButtonPressMask | KeyPressMask | KeyReleaseMask | ExposureMask);
 
+	// turn off keyboard autorepeat
 	XAutoRepeatOff(xInfo.display);
+
+	makeBlankCursor(xInfo);
 	/*
 	 * Put the window on the screen.
 	 */
