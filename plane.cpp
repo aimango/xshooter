@@ -80,6 +80,14 @@ class Plane : public Displayable {
 			}
 		}
 
+		int getVelocityX() {
+			return velocityX;
+		}
+
+		int getVelocityY() {
+			return velocityY;
+		}
+
 		void kill (){
 			x = 50;
 			y = 50;

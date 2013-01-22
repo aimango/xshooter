@@ -77,20 +77,22 @@ void handleResizing(XInfo &xInfo){
 	cout << xInfo.height << " " << xInfo.width << endl;
 }
 
-// set up GC colors
+// set up GC colors - coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 void setGCColors(XInfo &xInfo) {
 
 	// use midnight blue 
-	// coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
+	Colormap screen_colormap;
+	Status rc;
+
 	XColor blue;
-	Colormap screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	Status rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
+	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
 	}
 	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
 
-	// use hot pink 
+	// use medium purple
 	XColor purple;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
 	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &purple, &purple);
@@ -102,6 +104,7 @@ void setGCColors(XInfo &xInfo) {
 	// use white
 	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
 
+	// use pink
 	XColor pink;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
 	rc = XAllocNamedColor(xInfo.display, screen_colormap, "pink", &pink, &pink);
@@ -258,8 +261,8 @@ void handleCollisionDetection(XInfo &xInfo) {
 				&& dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
 				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
 
-				 cout << dCatcherX << " " << dCatcherY << endl;
-				 cout << dBombX << " " << dBombY << endl;
+				 // cout << dCatcherX << " " << dCatcherY << endl;
+				 // cout << dBombX << " " << dBombY << endl;
 				cout <<"Hit :)" << endl;
 				score ++;
 				dBombList[j]->remove();
@@ -269,7 +272,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		}
 	}
 
-	//collision detected - plane and buildings
+	//collision detection - plane and buildings
 	for (int i = 0; i < (int)dBuildingList.size(); i++){
 		int buildingX = dBuildingList[i]->getX();
 		int buildingY = dBuildingList[i]->getY();
@@ -286,6 +289,8 @@ void handleCollisionDetection(XInfo &xInfo) {
 				break;
 		}
 	}
+
+	//collision detection - plane and bombs
 }
 
 
@@ -428,7 +433,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 			case 'm': {
 				numBombs--;
 				if (numBombs >= 0){
-					Bomb *bomb = new Bomb(plane.getX(), plane.getY());
+					Bomb *bomb = new Bomb(plane.getX(), plane.getY(), plane.getVelocityX());
 					dBombList.push_back(bomb);
 				} 
 				break;

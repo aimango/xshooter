@@ -19,11 +19,11 @@ class Building : public Displayable {
 
 		virtual void paint(XInfo &xInfo) {
 			//cout << y << endl;
-			int newy = (xInfo.height - y) * (xInfo.height / 600);
+			int newy = (xInfo.height - y * xInfo.height / 600);
 			//cout << xInfo.height << " " << newy << endl;
 			XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-				x*xInfo.width/800, newy * xInfo.height/600, 
-				50*xInfo.width/800, (xInfo.height-newy) * xInfo.height/600);
+				x*xInfo.width/800, newy * xInfo.height/600,
+				50*xInfo.width/800, xInfo.height- newy * xInfo.height/600);
 		}
 
 		void move(XInfo &xInfo) {
