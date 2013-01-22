@@ -249,13 +249,14 @@ void handleBombs(XInfo &xInfo) {
 }
 
 void handleCollisionDetection(XInfo &xInfo) {
-	// collision detection - bombs & catchers
+	
 	for (int j = 0; j< (int)dBombList.size(); j++) {
 		int dBombX = dBombList[j]->getX();
 		int dBombY = dBombList[j]->getY();
 		if (dBombX < -50 || dBombY > xInfo.width + 50)
 			continue;
 
+		// collision detection - bombs & catchers
 		for (int i = 0; i < (int)dCatcherList.size(); i++) {
 			int dCatcherX = dCatcherList[i]->getX();
 			int dCatcherY = xInfo.height - dCatcherList[i]->getY();
@@ -272,6 +273,18 @@ void handleCollisionDetection(XInfo &xInfo) {
 				dCatcherList[i]->remove();
 				break;
 			}
+		}
+
+		//collision detection - plane and bombs
+		int dPlaneX = plane.getX();
+		int dPlaneY = plane.getY();
+		if (dPlaneY + 20 > dBombY &&
+			dPlaneX + 20 > dBombX && dPlaneX < dBombX + 50) {
+				cout << "Plane ran into bomb!" << endl;
+				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
+				// cout << dPlaneX << " " << dPlaneY << endl;
+				plane.kill();
+				break;
 		}
 	}
 
@@ -293,7 +306,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		}
 	}
 
-	//collision detection - plane and bombs
+
 	for (int i = 0; i < (int)dBombList.size(); i++){
 		int bombX = dBombList[i]->getX();
 		int bombY = dBombList[i]->getY();
