@@ -6,15 +6,16 @@
 
 class Bomb : public Displayable {
 	public:
-		Bomb(int x, int y, int velocityX, int ydir): x(x), y(y) {
+		Bomb(int x, int y, int velocityX, int fromPlane): x(x), y(y) {
 			speedX = (velocityX > 0) ? velocityX - 5 : velocityX + 5;
-			speedY = (ydir > 0) ? 5 : -5;
+			speedY = (fromPlane > 0) ? 5 : -5;
+			this->fromPlane = fromPlane;
 		}
 
 		void paint(XInfo &xInfo) {
 			//TODO: need to grab initial velocity of the plane
 			if (x > - 15 && y < xInfo.height + 15) {
-				XFillArc(xInfo.display, xInfo.window, xInfo.gc[2], x, y, 
+				XFillArc(xInfo.display, xInfo.window, xInfo.gc[2-fromPlane], x, y, 
 					20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
 			}
 		}
@@ -44,6 +45,7 @@ class Bomb : public Displayable {
 		int y;
 		int speedX;
 		int speedY;
+		int fromPlane;
 };
 
 #endif

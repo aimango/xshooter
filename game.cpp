@@ -243,7 +243,7 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 
 void handleBombs(XInfo &xInfo) {
 	for (int i = 0; i < (int)dBombList.size(); i++) {
-		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height)
+		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20)
 			dBombList.erase(dBombList.begin() + i);
 	}
 }
