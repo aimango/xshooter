@@ -1,7 +1,6 @@
 #ifndef catcher_h
 #define catcher_h
 
-#include <iostream>
 #include "xinfo.cpp"
 #include "displayable.cpp"
 #include "bomb.cpp"
@@ -43,6 +42,13 @@ class Catcher : public Displayable {
 
 		int getSpeed(){
 			return speed;
+		}
+
+		void toggleSpeed(){
+			if (speed == 5)
+				speed = 1;
+			else
+				speed = 5;
 		}
 
 		void remove(){

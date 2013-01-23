@@ -29,23 +29,23 @@ using namespace std;
 // better splash screen instructions
 // min width / height
 // dont move plane to top corner if goes to 0 lives - not sure if i should do 3 lives thing..
-// resizing fix - goooood - heights too tall
+
 // memory dealloc - better?
 // need better MVC structure - use header files too
-
 
 // splash screen - need to fig out how to increase font - apparently difficult
 
 // DONE:
 // create `game over` screen - done
 // 'new game' screen
-// collision  
-	//bomb & plane
+// collision
 // shooting from enemy
 // 3 lives implementation - done
 // catchers on the buildings - done
 // keyboard acceleration - done
 // game pausing - done
+// resizing fix - goooood 
+
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -77,7 +77,6 @@ void handleResizing(XInfo &xInfo){
 	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
 	xInfo.height = windowAttr.height;
 	xInfo.width = windowAttr.width;
-	//cout << xInfo.height << " " << xInfo.width << endl;
 }
 
 // set up GC colors - coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
@@ -144,9 +143,6 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSizeHints hints;
 	unsigned long black;
 
-	// seed the random # generator
-	srand (time(NULL));
-
 	/*
 	 * Display opening uses the DISPLAY	environment variable.
 	 * It can go wrong if DISPLAY isn't set, or you don't have permission.
@@ -210,13 +206,17 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	// turn off keyboard autorepeat
 	XAutoRepeatOff(xInfo.display);
 
+	// seed the random # generator
+	srand (time(NULL));
+
 	makeBlankCursor(xInfo);
+
 	/*
 	 * Put the window on the screen.
 	 */
 	XMapRaised( xInfo.display, xInfo.window );
 	XFlush(xInfo.display);
-	//sleep(2);	// let server get set up before sending drawing commands
+	sleep(2);	// let server get set up before sending drawing commands
 }
 
 void handleBuildingsAndCatchers(XInfo &xInfo) {
@@ -246,6 +246,16 @@ void handleBombs(XInfo &xInfo) {
 	}
 }
 
+void toggleSpeeds(){
+	for (int i = 0; i < (int)dBuildingList.size(); i++) {
+		dBuildingList[i]->toggleSpeed();
+	}
+
+	for (int i = 0; i < (int)dCatcherList.size(); i++) {
+		dCatcherList[i]->toggleSpeed();
+	}
+}
+
 void handleCollisionDetection(XInfo &xInfo) {
 	
 	for (int j = 0; j< (int)dBombList.size(); j++) {
@@ -259,8 +269,6 @@ void handleCollisionDetection(XInfo &xInfo) {
 
 			if  (dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
 				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
-				// cout << dCatcherX << " " << dCatcherY << endl;
-				// cout << dBombX << " " << dBombY << endl;
 					cout <<"Hit :)" << endl;
 					score ++;
 					dBombList[j]->remove();
@@ -275,8 +283,6 @@ void handleCollisionDetection(XInfo &xInfo) {
 		if (dBombY > dPlaneY - 20 && dBombY < dPlaneY + 20 &&
 			dBombX > dPlaneX - 20 && dBombX < dPlaneX + 20) {
 				cout << "Plane ran into bomb!" << endl;
-				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
-				// cout << dPlaneX << " " << dPlaneY << endl;
 				plane.kill();
 				break;
 		}
@@ -293,8 +299,6 @@ void handleCollisionDetection(XInfo &xInfo) {
 		if (dPlaneY + 20 > (600 - buildingY) &&
 			dPlaneX + 20 > buildingX && dPlaneX < buildingX + 50) {
 				cout << "Plane crashed into building!" << endl;
-				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
-				// cout << dPlaneX << " " << dPlaneY << endl;
 				plane.kill();
 				break;
 		}
@@ -339,7 +343,7 @@ void memoryDealloc(){
 /*
  * Function to repaint a display list
  */
-void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
+void repaint( XInfo &xInfo, int splash, int &paused) {
 	if (plane.getLives() <= 0) {
 		paused = 0;
 		string lineOne = "GAME OVER.";
@@ -401,14 +405,9 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 			dBuildingList[i]->paint(xInfo);
 		}
 
-		// indicate # bombs left
-		string text = numBombs>0 ? "Number of Bombs: "+convertToString(numBombs) : "No more bombs!";
-		Text numBombs(10, 10, text);
-		numBombs.paint(xInfo);
-
 		// indicate # lives left
-		text = "Number of Lives: "+convertToString(plane.getLives());
-		Text numLives(10, 25, text);
+		string text = "Number of Lives: "+convertToString(plane.getLives());
+		Text numLives(10, 20, text);
 		numLives.paint(xInfo);
 
 		// indicate current score
@@ -421,10 +420,6 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 		handleBombs(xInfo);
 		XFlush(xInfo.display);
 	}
-}
-
-void handleButtonPress(XInfo &xInfo, XEvent &event) {
-	cout << "Got button press!" << endl;
 }
 
 void handleKeyRelease(XInfo &xInfo, XEvent &event) {
@@ -459,7 +454,7 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 	}
 }
 
-void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
+void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 	KeySym key;
 	char text[BufferSize];
 	
@@ -468,18 +463,15 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 		text, 					// buffer when text will be written
 		BufferSize, 			// size of the text buffer
 		&key, 					// workstation-independent key symbol
-		NULL );					// pointer to a composeStatus structure (unused)
+		NULL);					// pointer to a composeStatus structure (unused)
 	if ( i == 1) {
 		switch (text[0]){
 			case 'q':
 				error("Terminating normally.");
 				break;
 			case 'm': {
-				numBombs--;
-				if (numBombs >= 0){
-					Bomb *bomb = new Bomb(plane.getX(), plane.getY()+20, plane.getVelocityX(), 0);
-					dBombList.push_back(bomb);
-				} 
+				Bomb *bomb = new Bomb(plane.getX(), plane.getY()+20, plane.getVelocityX(), 0);
+				dBombList.push_back(bomb);
 				break;
 			}
 			case 'w': {
@@ -502,7 +494,6 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 				if (plane.getLives() <= 0){
 					plane.reset();
 					memoryDealloc();
-					numBombs = 50;
 					score = 0;
 				}
 				splash = 0;
@@ -511,12 +502,10 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 			case 'f': case 'F': {
 				splash = 1;
 				break;
-			// }
-			// case 'g': {
-			// 	if (FPS == 40)
-			// 		FPS = 10;
-			// 	else
-			// 		FPS = 40;
+			}
+			case 'g': {
+				toggleSpeeds();
+				break;
 			}
 		}
 	}
@@ -543,7 +532,7 @@ void handleAnimation(XInfo &xInfo, int splash) {
 	}
 }
 
-unsigned long now() { // change this timer ...
+unsigned long now() {
 	timeval tv;
 	gettimeofday(&tv, NULL);
 	return tv.tv_sec * 1000000 + tv.tv_usec;
@@ -553,7 +542,6 @@ void eventLoop(XInfo &xInfo) {
 	XEvent event;
 	unsigned long lastRepaint = 0;
 	int splash = 1;
-	int numBombs = 50;
 	int paused = 0;
 
 	while(true) {
@@ -564,13 +552,12 @@ void eventLoop(XInfo &xInfo) {
 					handleButtonPress(xInfo, event);
 					break;
 				case KeyPress:
-					handleKeyPress(xInfo, event, splash, numBombs);
+					handleKeyPress(xInfo, event, splash);
 					break;
 				case KeyRelease:
 					handleKeyRelease(xInfo, event);
 					break;
 				case Expose:
-					cout << "resizing" << endl;
 					handleResizing(xInfo);
 					break;
 			}
@@ -579,7 +566,7 @@ void eventLoop(XInfo &xInfo) {
 		unsigned long end = now();
 		if (end - lastRepaint > 1000000/FPS) {
 			handleAnimation(xInfo, splash);
-			repaint(xInfo, splash, numBombs, paused);
+			repaint(xInfo, splash, paused);
 			lastRepaint = now();
 		}
 		if (XPending(xInfo.display) == 0) {
