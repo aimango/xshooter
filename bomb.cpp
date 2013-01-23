@@ -14,8 +14,8 @@ class Bomb : public Displayable {
 
 		void paint(XInfo &xInfo) {
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2+fromEnemy], 
-				x * xInfo.height/600, y * xInfo.height/600, 
-				20 * xInfo.height/600, 20 * xInfo.height/600, 0, 360*64);
+				x * xInfo.width/800, y * xInfo.height/600, 
+				20 * xInfo.width/800, 20 * xInfo.height/600, 0, 360*64);
 
 		}
 

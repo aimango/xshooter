@@ -15,7 +15,7 @@ class Catcher : public Displayable {
 
 		void paint(XInfo &xInfo) {
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[3], 
-				(x-10)*xInfo.width/800, (xInfo.height-y-15)*xInfo.height/600, 
+				(x-10)*xInfo.width/800, (600-y-15)*xInfo.height/600,
 				30*xInfo.height/600, 30*xInfo.width/800, 0, 360*64);
 		}
 

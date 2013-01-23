@@ -221,7 +221,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 
 void handleBuildingsAndCatchers(XInfo &xInfo) {
 	int lastElt = dBuildingList.size()-1;
-	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < xInfo.width ) {
+	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < 800 ) {
 		double positionX = dBuildingList.empty() ? xInfo.width : dBuildingList[lastElt]->getX() + 50;
 		Building *b = new Building(positionX);
 		dBuildingList.push_back(b);
@@ -255,7 +255,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		// collision detection - bombs & catchers
 		for (int i = 0; i < (int)dCatcherList.size(); i++) {
 			double dCatcherX = dCatcherList[i]->getX();
-			double dCatcherY = xInfo.height - dCatcherList[i]->getY();
+			double dCatcherY = 600 - dCatcherList[i]->getY();
 
 			if  (dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
 				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
@@ -290,7 +290,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		double dPlaneX = plane.getX();
 		double dPlaneY = plane.getY();
 
-		if (dPlaneY + 20 > (xInfo.height - buildingY) &&
+		if (dPlaneY + 20 > (600 - buildingY) &&
 			dPlaneX + 20 > buildingX && dPlaneX < buildingX + 50) {
 				cout << "Plane crashed into building!" << endl;
 				// cout << buildingX + i * 50 << " " << xInfo.height - heights[i] << endl;
@@ -307,7 +307,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			double buildingX = dBuildingList[i]->getX();
-			double buildingY = xInfo.height - dBuildingList[i]->getY();
+			double buildingY = 600 - dBuildingList[i]->getY();
 
 			if  (buildingX > -15 && buildingX < xInfo.width
 				&& dBombY + 10 > buildingY && dBombY - 10 < buildingY + 30
@@ -377,6 +377,7 @@ void repaint( XInfo &xInfo, int splash, int numBombs, int &paused) {
 	}
 	else {
 		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
+		handleResizing(xInfo);
 		paused = 1;
 		XWindowAttributes windowInfo;
 		XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
@@ -500,7 +501,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash, int &numBombs) {
 			case 'c': {
 				if (plane.getLives() <= 0){
 					plane.reset();
-					clearStuff();
+					memoryDealloc();
 					numBombs = 50;
 					score = 0;
 				}
@@ -531,7 +532,7 @@ void handleAnimation(XInfo &xInfo, int splash) {
 			dCatcherList[i]->incrementRate();
 			int rate = dCatcherList[i]->getRate();
 			if (rate % 75 == 0) {
-				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), xInfo.height - dCatcherList[i]->getY() - 30, -10, 1);
+				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -10, 1);
 				dBombList.push_back(bomb);
 			}
 		}
