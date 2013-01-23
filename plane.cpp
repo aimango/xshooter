@@ -8,14 +8,10 @@ class Plane : public Displayable {
 	public:
 		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
 			velocityX = velocityY = 0;
-			lives = 3;
+			lives = 1;
 		}
 
 		virtual void paint(XInfo &xInfo) {
-			/* draw a small triangle at the top-left corner of the window. */
-			/* the triangle is made of a set of consecutive lines, whose   */
-			/* end-point pixels are specified in the 'points' array.       */
-			// TODO not sure how to set thickness of lines
 
 			x += velocityX;
 			if (x < 0) {
@@ -30,15 +26,6 @@ class Plane : public Displayable {
 			} else if (y > xInfo.height) {
 				y = xInfo.height;
 			}
-
-			// XPoint points[] = {
-			// 	{x-30, y-15},
-			// 	{x+0, y+30},
-			// 	{x-30, y-15},
-			// 	{x-30, y-15}
-			// };
-			// int npoints = sizeof(points)/sizeof(XPoint);
-			// XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
 
 			XFillArc(xInfo.display, xInfo.window, xInfo.gc[2],
 				(double)x*xInfo.width/800, (double)y*xInfo.height/600, 
@@ -61,7 +48,9 @@ class Plane : public Displayable {
 		}
 
 		void reset(){
-			lives = 3;
+			x = 50;
+			y = 50;
+			lives = 1;
 		}
 
 		void setVelocityX(int dir) {
@@ -91,8 +80,6 @@ class Plane : public Displayable {
 		}
 
 		void kill (){
-			x = 50;
-			y = 50;
 			lives--;
 		}
 

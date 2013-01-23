@@ -33,7 +33,7 @@ class Catcher : public Displayable {
 
 		void incrementRate() {
 			attackRate++;
-			if (attackRate == 100)
+			if (attackRate == 150)
 				attackRate = 0;
 		}
 

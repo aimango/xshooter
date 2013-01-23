@@ -24,11 +24,11 @@ class Bomb : public Displayable {
 			x = x + speedX;
 		}
 
-		int getX() {
+		double getX() {
 			return x;
 		}
 
-		int getY() {
+		double getY() {
 			return y;
 		}
 
