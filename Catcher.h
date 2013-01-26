@@ -4,7 +4,6 @@
 #include "XInfo.h"
 #include "Displayable.h"
 
-
 class Catcher : public Displayable {
 	public:
 		Catcher(int x, int y);

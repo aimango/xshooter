@@ -26,15 +26,13 @@ using namespace std;
 
 
 // TODO:
+// readme for extra features
+// flickering on resizing - b.t buildings
 // ask if the makefile is okay
 // better splash screen instructions
-// min width / height ?
-// memory dealloc - better?
-
-
-// splash screen - need to fig out how to increase font - apparently difficult
 
 // DONE:
+// memory dealloc - better?
 // do grader mode
 // need better MVC structure - use header files too
 // ****get rid of the remove () functions and use deque erase. 
@@ -47,7 +45,6 @@ using namespace std;
 // keyboard acceleration - done
 // game pausing - done
 // resizing fix - goooood 
-
 
 const int Border = 5;
 const int BufferSize = 10;
@@ -71,20 +68,13 @@ deque<Bomb *> dBombList;
 deque<Catcher *> dCatcherList;
 deque<Building *> dBuildingList;
 
-void handleResizing(XInfo &xInfo){
-	XWindowAttributes windowAttr;
-	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
-	xInfo.height = windowAttr.height;
-	xInfo.width = windowAttr.width;
-}
 
 // set up GC colors - coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 void setGCColors(XInfo &xInfo) {
-
-	// use midnight blue 
 	Colormap screen_colormap;
 	Status rc;
 
+	// use midnight blue 
 	XColor blue;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
 	rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
@@ -116,11 +106,11 @@ void setGCColors(XInfo &xInfo) {
 }
 
 void makeBlankCursor(XInfo &xInfo) {
-	/* vars to make blank cursor */
+	// vars to make blank cursor
 	XColor dummy;
 	char data[1] = {0};
 
-	/* make a blank cursor */
+	// make a blank cursor
 	Pixmap blank = XCreateBitmapFromData (xInfo.display, xInfo.window, data, 1, 1);
 	if(blank == None) {
 		error("error: out of memory. can't create blank pixmap from data");
@@ -130,9 +120,6 @@ void makeBlankCursor(XInfo &xInfo) {
 
 	// set the blank cursor
 	XDefineCursor(xInfo.display, xInfo.window, cursor);
-
-	// above found from http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
-	// XUndefineCursor(xInfo.display, xInfo.window);
 }
 
  /*
@@ -153,22 +140,14 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	
 	xInfo.width = 800;
 	xInfo.height = 600;
-	/*
-	 * Find out some things about the display you're using.
-	 */
 	xInfo.screen = DefaultScreen( xInfo.display );
 
-	xInfo.gameSpeed = 5;
-
-	black = XBlackPixel( xInfo.display, xInfo.screen );
+	black = XBlackPixel( xInfo.display, xInfo.screen);
 
 	hints.x = 100;
 	hints.y = 100;
 	hints.width = xInfo.width;
 	hints.height = xInfo.height;
-
-	hints.min_width = 600; 
-	hints.min_height = 400;
 	hints.flags = PPosition | PSize;
 
 	xInfo.window = XCreateSimpleWindow ( 
@@ -189,9 +168,10 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		argv, argc,					// applications command line args
 		&hints );					// size hints for the window
 
-	/* 
-	 * Create Graphics Contexts
-	 */
+	// set the game speed (varies if in grader mode or normal mode)
+	xInfo.gameSpeed = 5;
+
+	// Create Graphic Contexts
 	for (int i = 0; i <= 3; i++){
 		xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
 		XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
@@ -210,16 +190,26 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	// seed the random # generator
 	srand (time(NULL));
 
+	// hide the mouse cursor
 	makeBlankCursor(xInfo);
 
-	/*
-	 * Put the window on the screen.
-	 */
+	// load default font
+	string fontName = "fixed";
+	xInfo.font = XLoadQueryFont(xInfo.display, fontName.c_str());
+	if (!xInfo.font) {
+	    error("Error Loading Font");
+	}
+
+	// Put the window on the screen
 	XMapRaised( xInfo.display, xInfo.window );
 	XFlush(xInfo.display);
-	sleep(2);	// let server get set up before sending drawing commands
+
+	// let server get set up before sending drawing commands
+	sleep(2);
 }
 
+// create new building and catcher when the last building moves far enough.
+// delete building when off screen.
 void handleBuildingsAndCatchers(XInfo &xInfo) {
 	int lastElt = dBuildingList.size()-1;
 	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < 800 ) {
@@ -242,6 +232,7 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 	}
 }
 
+// erase bombs when off screen.
 void handleBombs(XInfo &xInfo) {
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20){
@@ -257,7 +248,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		double dBombX = dBombList[j]->getX();
 		double dBombY = dBombList[j]->getY();
 
-		// collision detection - bombs & catchers
+		// bombs & catchers
 		for (int i = 0; i < (int)dCatcherList.size(); i++) {
 			double dCatcherX = dCatcherList[i]->getX();
 			double dCatcherY = 600 - dCatcherList[i]->getY();
@@ -274,7 +265,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 			}
 		}
 
-		//collision detection - plane and bombs
+		// plane and bombs
 		double dPlaneX = plane.getX();
 		double dPlaneY = plane.getY();
 		if (dBombY > dPlaneY - 20 && dBombY < dPlaneY + 20 &&
@@ -285,7 +276,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		}
 	}
 
-	//collision detection - plane and buildings
+	// plane and buildings
 	for (int i = 0; i < (int)dBuildingList.size(); i++){
 		double buildingX = dBuildingList[i]->getX();
 		double buildingY = dBuildingList[i]->getY();
@@ -301,7 +292,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 		}
 	}
 
-	//collision detection - bombs and buildings
+	// bombs and buildings
 	for (int j = 0; j< (int)dBombList.size(); j++) {
 		double dBombX = dBombList[j]->getX();
 		double dBombY = dBombList[j]->getY();
@@ -321,6 +312,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 	}
 }
 
+// delete everything!
 void memoryDealloc(){
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		delete dBombList[i];
@@ -332,7 +324,6 @@ void memoryDealloc(){
 		delete dBuildingList[i];
 	}
 
-	//delete xInfo.display; 
 	dBombList.clear();
 	dCatcherList.clear();
 	dBuildingList.clear();
@@ -343,49 +334,64 @@ void error(string msg){
 	memoryDealloc();
 	exit(0);
 }
-/*
- * Function to repaint a display list
- */
+
+void handleResizing(XInfo &xInfo){
+	XWindowAttributes windowAttr;
+	XGetWindowAttributes(xInfo.display, xInfo.window, &windowAttr);
+
+	// force minimum 600 x 400 window size
+	if (windowAttr.height < 400) {
+		XResizeWindow(xInfo.display, xInfo.window, windowAttr.width, 400);
+	} 
+	if (windowAttr.width < 600) {
+		XResizeWindow(xInfo.display, xInfo.window, 600, windowAttr.height);
+	}
+	xInfo.height = windowAttr.height;
+	xInfo.width = windowAttr.width;
+}
+
+// repaint all the objects
 void repaint( XInfo &xInfo, int splash, int &paused) {
+
+	handleResizing(xInfo);
+
 	if (plane.getLives() <= 0) {
 		paused = 0;
 		string lineOne = "GAME OVER.";
 		string lineTwo = "SCORE: "+convertToString(score);
 		string lineThree = "Press c to play again or q to quit the game.";
 
-		handleResizing(xInfo);
 		XClearWindow (xInfo.display, xInfo.window);
-		Text line(xInfo.width/2-40, xInfo.height/2 - 20, lineOne);
-		Text line2(xInfo.width/2-40, xInfo.height/2, lineTwo);
-		Text line3(xInfo.width/2-135, xInfo.height/2 + 20, lineThree);
-		line.paint(xInfo);
-		line2.paint(xInfo);
-		line3.paint(xInfo);
+		Text line(1, xInfo.height/2 - 20, lineOne);
+		Text line2(1, xInfo.height/2, lineTwo);
+		Text line3(1, xInfo.height/2 + 20, lineThree);
+		line.paint(xInfo, 1);
+		line2.paint(xInfo, 1);
+		line3.paint(xInfo, 1);
 	}
 	else if (splash){
+
 		XClearWindow (xInfo.display, xInfo.window);
 		if (paused) {
 			string lineZero = "Press c to continue gameplay. Press q to quit the game.";
-			Text line0(xInfo.width/2-180, xInfo.height/2-20, lineZero);
-			line0.paint(xInfo);
+			Text line0(1, xInfo.height/2-20, lineZero);
+			line0.paint(xInfo, 1);
 		} else {
 			string lineZero = "Elisa Lou 456.";
 			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
 			string lineTwo = "Press c to start gameplay. Press q to terminate the game at any time.";
 
-			Text line0(xInfo.width/2-40, xInfo.height/2-20, lineZero);
-			Text line(xInfo.width/2-200, xInfo.height/2, lineOne);
-			Text line2(xInfo.width/2-180, xInfo.height/2 + 20, lineTwo);
-			line.paint(xInfo);
-			line2.paint(xInfo);
-			line0.paint(xInfo);
+			Text line0(1, xInfo.height/2-20, lineZero);
+			Text line(1, xInfo.height/2, lineOne);
+			Text line2(1, xInfo.height/2 + 20, lineTwo);
+			line.paint(xInfo, 1);
+			line2.paint(xInfo, 1);
+			line0.paint(xInfo, 1);
 		}
-		handleResizing(xInfo);
 	}
 	else {
-		//XClearWindow( xInfo.display, xInfo.window ); // flickers a lot
-		handleResizing(xInfo);
 		paused = 1;
+
 		XWindowAttributes windowInfo;
 		XGetWindowAttributes(xInfo.display, xInfo.window, &windowInfo);
 		unsigned int height = windowInfo.height;
@@ -394,9 +400,7 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		//re-draws the backgound
 		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
 
-		/*
-		 * Repaint everything
-		 */
+		// repaint everything!
 		plane.paint(xInfo);
 		for (int i = 0; i < (int)dCatcherList.size(); i++) {
 			dCatcherList[i]->paint(xInfo);
@@ -409,51 +413,19 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		}
 
 		// indicate # lives left
-		string text = "Number of Lives: "+convertToString(plane.getLives());
+		string text = "Number of Lives: " + convertToString(plane.getLives());
 		Text numLives(10, 20, text);
-		numLives.paint(xInfo);
+		numLives.paint(xInfo, 0);
 
 		// indicate current score
-		text = "Score: "+convertToString(score);
+		text = "Score: " + convertToString(score);
 		Text scoring(10, 40, text);
-		scoring.paint(xInfo);
+		scoring.paint(xInfo, 0);
 
 		handleBuildingsAndCatchers(xInfo);
 		handleCollisionDetection(xInfo);
 		handleBombs(xInfo);
 		XFlush(xInfo.display);
-	}
-}
-
-void handleKeyRelease(XInfo &xInfo, XEvent &event) {
-	KeySym key;
-	char text[BufferSize];
-
-	int i = XLookupString( 
-		(XKeyEvent *)&event, 	// the keyboard event
-		text, 					// buffer when text will be written
-		BufferSize, 			// size of the text buffer
-		&key, 					// workstation-independent key symbol
-		NULL);					// pointer to a composeStatus structure (unused)
-	if ( i == 1) {
-		switch (text[0]){
-			case 'w': {
-				plane.setVelocityY(1);
-				break;
-			}
-			case 'a': {
-				plane.setVelocityX(1);
-				break;
-			}
-			case 's': {
-				plane.setVelocityY(0);
-				break;
-			}
-			case 'd': {
-				plane.setVelocityX(0);
-				break;
-			}
-		}
 	}
 }
 
@@ -472,44 +444,66 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 			case 'q':
 				error("Terminating normally.");
 				break;
+			case 'w':
+				plane.setVelocityY(0);
+				break;
+			case 'a':
+				plane.setVelocityX(0);
+				break;
+			case 's':
+				plane.setVelocityY(1);
+				break;
+			case 'd':
+				plane.setVelocityX(1);
+				break;
+			case 'c':
+				if (plane.getLives() <= 0){
+					plane.reset();
+					memoryDealloc();
+					score = 0;
+					xInfo.gameSpeed = 5;
+				}
+				splash = 0;
+				break;
+			case 'f': case 'F':
+				splash = 1;
+				break;
+			case 'g':
+				xInfo.gameSpeed = xInfo.gameSpeed == 5 ? 2 : 5;
+				break;
 			case 'm': {
 				Bomb *bomb = new Bomb(plane.getX(), plane.getY()+20, plane.getVelocityX(), 0);
 				dBombList.push_back(bomb);
 				break;
 			}
-			case 'w': {
-				plane.setVelocityY(0);
-				break;
-			}
-			case 'a': {
-				plane.setVelocityX(0);
-				break;
-			}
-			case 's': {
+		}
+	}
+}
+
+void handleKeyRelease(XInfo &xInfo, XEvent &event) {
+	KeySym key;
+	char text[BufferSize];
+
+	int i = XLookupString( 
+		(XKeyEvent *)&event, 	// the keyboard event
+		text, 					// buffer when text will be written
+		BufferSize, 			// size of the text buffer
+		&key, 					// workstation-independent key symbol
+		NULL);					// pointer to a composeStatus structure (unused)
+	if ( i == 1) {
+		switch (text[0]){
+			case 'w':
 				plane.setVelocityY(1);
 				break;
-			}
-			case 'd': {
+			case 'a':
 				plane.setVelocityX(1);
 				break;
-			}
-			case 'c': {
-				if (plane.getLives() <= 0){
-					plane.reset();
-					memoryDealloc();
-					score = 0;
-				}
-				splash = 0;
+			case 's':
+				plane.setVelocityY(0);
 				break;
-			}
-			case 'f': case 'F': {
-				splash = 1;
+			case 'd':
+				plane.setVelocityX(0);
 				break;
-			}
-			case 'g': {
-				xInfo.gameSpeed = xInfo.gameSpeed == 5 ? 2 : 5;
-				break;
-			}
 		}
 	}
 }
@@ -519,19 +513,20 @@ void handleAnimation(XInfo &xInfo, int splash) {
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->move(xInfo);
 		}
+		for (int i = 0; i < (int)dBombList.size(); i++){
+			dBombList[i]->move(xInfo);
+		}
 		for (int i = 0; i< (int)dCatcherList.size(); i++){
 			dCatcherList[i]->move(xInfo);
 			dCatcherList[i]->incrementRate();
+
+			// Enemies shoot bombs at a specified rate
 			int rate = dCatcherList[i]->getRate();
 			if (rate % 75 == 0) {
 				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
 				dBombList.push_back(bomb);
 			}
 		}
-		for (int i = 0; i < (int)dBombList.size(); i++){
-			dBombList[i]->move(xInfo);
-		}
-
 	}
 }
 
@@ -549,8 +544,8 @@ void eventLoop(XInfo &xInfo) {
 
 	while(true) {
 		if (XPending(xInfo.display) > 0) {
-			XNextEvent( xInfo.display, &event );
-			switch( event.type ) {
+			XNextEvent(xInfo.display, &event);
+			switch(event.type) {
 				case KeyPress:
 					handleKeyPress(xInfo, event, splash);
 					break;
@@ -576,17 +571,15 @@ void eventLoop(XInfo &xInfo) {
 }
 
 /*
- * Start executing here.
  *	 First initialize window.
  *	 Next loop responding to events.
- *	 Exit forcing window manager to clean up - cheesy, but easy.
+ *	 Exit forcing window manager to clean up.
+ *   Deallocate memory.
  */
-int main ( int argc, char *argv[] ) {
+int main (int argc, char *argv[]) {
 	XInfo xInfo;
-
 	initX(argc, argv, xInfo);
 	eventLoop(xInfo);
 	XCloseDisplay(xInfo.display);
-
 	memoryDealloc();
 }
