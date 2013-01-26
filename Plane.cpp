@@ -22,16 +22,6 @@ void Plane::paint(XInfo &xInfo) {
 		y = xInfo.height;
 	}
 
-// XPoint points[] = {
-// -			// 	{x-30, y-15},
-// -			// 	{x+0, y+30},
-// -			// 	{x-30, y-15},
-// -			// 	{x-30, y-15}
-// -			// };
-// -			// int npoints = sizeof(points)/sizeof(XPoint);
-// -			// XDrawLines(xInfo.display, xInfo.window, xInfo.gc[2], points, npoints, CoordModeOrigin);
-// -
-
 	XFillArc(xInfo.display, xInfo.window, xInfo.gc[2],
 		x * xInfo.width/800, y * xInfo.height/600, 
 		width * xInfo.width/800, height * xInfo.height/600, 0, 360*64);

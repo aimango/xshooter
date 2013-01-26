@@ -2,7 +2,6 @@
 #define text_h
 
 #include "XInfo.h"
-#include "Displayable.h"
 #include <string>
 
 class Text {  

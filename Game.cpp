@@ -8,7 +8,7 @@
 #include <cstring>
 #include <sys/time.h>
 #include <sstream>
- #include <cstdlib>
+#include <cstdlib>
 
 // X functions
 #include <X11/Xlib.h>
