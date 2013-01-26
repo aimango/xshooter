@@ -10,7 +10,6 @@
 class Building : public Displayable {
 	public:
 		Building(double startingX){
-			speed = 5;
 			x = startingX;
 			y = 40 * (rand() % 9 + 1);
 		}
@@ -25,7 +24,7 @@ class Building : public Displayable {
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed;
+			x -= xInfo.gameSpeed;
 		}
 
 		int getX() {

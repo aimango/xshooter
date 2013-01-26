@@ -25,11 +25,11 @@ using namespace std;
 
 
 // TODO:
+// ****get rid of the remove () functions and use deque erase. 
+// do grader mode
 // ask if the makefile is okay
 // better splash screen instructions
-// min width / height
-// dont move plane to top corner if goes to 0 lives - not sure if i should do 3 lives thing..
-
+// min width / height ?
 // memory dealloc - better?
 // need better MVC structure - use header files too
 
@@ -67,7 +67,7 @@ string convertToString (int i) {
 }
 
 int score = 0;
-Plane plane(50, 50, 30, 20);
+Plane plane(50, 50);
 deque<Bomb *> dBombList;
 deque<Catcher *> dCatcherList;
 deque<Building *> dBuildingList;
@@ -159,6 +159,8 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	 */
 	xInfo.screen = DefaultScreen( xInfo.display );
 
+	xInfo.gameSpeed = 5;
+
 	black = XBlackPixel( xInfo.display, xInfo.screen );
 
 	hints.x = 100;
@@ -246,15 +248,15 @@ void handleBombs(XInfo &xInfo) {
 	}
 }
 
-void toggleSpeeds(){
-	for (int i = 0; i < (int)dBuildingList.size(); i++) {
-		dBuildingList[i]->toggleSpeed();
-	}
+// void toggleSpeeds(){
+// 	for (int i = 0; i < (int)dBuildingList.size(); i++) {
+// 		dBuildingList[i]->toggleSpeed();
+// 	}
 
-	for (int i = 0; i < (int)dCatcherList.size(); i++) {
-		dCatcherList[i]->toggleSpeed();
-	}
-}
+// 	for (int i = 0; i < (int)dCatcherList.size(); i++) {
+// 		dCatcherList[i]->toggleSpeed();
+// 	}
+// }
 
 void handleCollisionDetection(XInfo &xInfo) {
 	
@@ -271,8 +273,8 @@ void handleCollisionDetection(XInfo &xInfo) {
 				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
 					cout <<"Hit :)" << endl;
 					score ++;
-					dBombList[j]->remove();
-					dCatcherList[i]->remove();
+					dBombList.erase(dBombList.begin() + j);
+					dCatcherList.erase(dCatcherList.begin() + i);
 					break;
 			}
 		}
@@ -316,7 +318,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 			if  (buildingX > -15 && buildingX < xInfo.width
 				&& dBombY + 10 > buildingY && dBombY - 10 < buildingY + 30
 				&& dBombX + 10 > buildingX - 15 && dBombX - 10 < buildingX + 15){
-					dBombList[j]->remove();
+					dBombList.erase(dBombList.begin() + j);
 					break;
 			}
 		}
@@ -431,7 +433,7 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 		text, 					// buffer when text will be written
 		BufferSize, 			// size of the text buffer
 		&key, 					// workstation-independent key symbol
-		NULL );					// pointer to a composeStatus structure (unused)
+		NULL);					// pointer to a composeStatus structure (unused)
 	if ( i == 1) {
 		switch (text[0]){
 			case 'w': {
@@ -504,7 +506,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 				break;
 			}
 			case 'g': {
-				toggleSpeeds();
+				xInfo.gameSpeed = xInfo.gameSpeed == 5 ? 2 : 5;
 				break;
 			}
 		}
@@ -521,7 +523,7 @@ void handleAnimation(XInfo &xInfo, int splash) {
 			dCatcherList[i]->incrementRate();
 			int rate = dCatcherList[i]->getRate();
 			if (rate % 75 == 0) {
-				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -10, 1);
+				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
 				dBombList.push_back(bomb);
 			}
 		}
@@ -548,9 +550,6 @@ void eventLoop(XInfo &xInfo) {
 		if (XPending(xInfo.display) > 0) {
 			XNextEvent( xInfo.display, &event );
 			switch( event.type ) {
-				case ButtonPress:
-					handleButtonPress(xInfo, event);
-					break;
 				case KeyPress:
 					handleKeyPress(xInfo, event, splash);
 					break;

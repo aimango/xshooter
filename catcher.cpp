@@ -3,12 +3,11 @@
 
 #include "xinfo.cpp"
 #include "displayable.cpp"
-#include "bomb.cpp"
+
 
 class Catcher : public Displayable {
 	public:
 		Catcher(int x, int y): x(x), y(y) {
-			speed = 5;
 			attackRate = 1;
 		}
 
@@ -19,7 +18,7 @@ class Catcher : public Displayable {
 		}
 
 		void move(XInfo &xInfo) {
-			x -= speed;
+			x -= xInfo.gameSpeed;
 		}
 
 		int getX() {
@@ -40,28 +39,10 @@ class Catcher : public Displayable {
 			return attackRate;
 		}
 
-		int getSpeed(){
-			return speed;
-		}
-
-		void toggleSpeed(){
-			if (speed == 5)
-				speed = 1;
-			else
-				speed = 5;
-		}
-
-		void remove(){
-			x= -100;
-			y= -100;
-			speed = 0;
-		}
-
 	private:
 		int attackRate;
 		double x;
 		double y;
-		int speed;
 };
 
 #endif

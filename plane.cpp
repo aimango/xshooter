@@ -6,13 +6,14 @@
 
 class Plane : public Displayable {
 	public:
-		Plane(int x, int y, int width, int height): x(x), y(y), width(width), height(height)  {
+		Plane(int x, int y): x(x), y(y),{
+			width = 30;
+			heigh = 20;
 			velocityX = velocityY = 0;
-			lives = 1;
+			lives = 3;
 		}
 
 		virtual void paint(XInfo &xInfo) {
-
 			x += velocityX;
 			if (x < 0) {
 				x = 0;

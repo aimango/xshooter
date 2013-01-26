@@ -7,7 +7,7 @@
 class Bomb : public Displayable {
 	public:
 		Bomb(int x, int y, int velocityX, int fromEnemy): x(x), y(y) {
-			speedX = (velocityX > 0) ? velocityX - 5 : velocityX + 5;
+			speedX = (velocityX > 0) ? velocityX - velocityX/2: velocityX + (velocityX/2*-1);
 			speedY = (fromEnemy) ? -5 : 5;
 			this->fromEnemy = fromEnemy;
 		}
@@ -30,13 +30,6 @@ class Bomb : public Displayable {
 
 		double getY() {
 			return y;
-		}
-
-		void remove(){
-			x= -100;
-			y= -100;
-			speedX = 0;
-			speedY = 0;
 		}
 
 	private:
