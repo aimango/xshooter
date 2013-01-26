@@ -5,7 +5,7 @@
 #ifndef displayable_h
 #define displayable_h
 
-#include "xinfo.cpp"
+#include "xinfo.h"
 
 
 class Displayable {

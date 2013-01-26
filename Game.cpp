@@ -8,34 +8,36 @@
 #include <cstring>
 #include <sys/time.h>
 #include <sstream>
+ #include <cstdlib>
 
 // X functions
 #include <X11/Xlib.h>
 #include <X11/Xutil.h>
 
 // my classes
-#include "xinfo.cpp"
-#include "catcher.cpp"
-#include "bomb.cpp"
-#include "text.cpp"
-#include "plane.cpp"
-#include "building.cpp"
+#include "XInfo.h"
+#include "Catcher.h"
+#include "Bomb.h"
+#include "Text.h"
+#include "Plane.h"
+#include "Building.h"
 
 using namespace std;
 
 
 // TODO:
-// ****get rid of the remove () functions and use deque erase. 
-// do grader mode
 // ask if the makefile is okay
 // better splash screen instructions
 // min width / height ?
 // memory dealloc - better?
-// need better MVC structure - use header files too
+
 
 // splash screen - need to fig out how to increase font - apparently difficult
 
 // DONE:
+// do grader mode
+// need better MVC structure - use header files too
+// ****get rid of the remove () functions and use deque erase. 
 // create `game over` screen - done
 // 'new game' screen
 // collision
@@ -54,10 +56,7 @@ const int FPS = 40;
 /*
  * Function to put out a message on error exits.
  */
-void error (string msg) {
-	cerr << msg << endl;
-	exit(0);
-}
+void error (string msg);
 
 string convertToString (int i) {
 	string s;
@@ -234,29 +233,23 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 			dCatcherList.push_back(c);
 		}
 	} else if (!dBuildingList.empty() && dBuildingList[0]->getX() < -50) {
+		delete dBuildingList[0];
 		dBuildingList.pop_front();
 	}
 	if (!dCatcherList.empty() && dCatcherList[0]->getX() < -100){
+		delete dBuildingList[0];
 		dCatcherList.pop_front();
 	}
 }
 
 void handleBombs(XInfo &xInfo) {
 	for (int i = 0; i < (int)dBombList.size(); i++) {
-		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20)
+		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20){
+			delete dBombList[i];
 			dBombList.erase(dBombList.begin() + i);
+		}
 	}
 }
-
-// void toggleSpeeds(){
-// 	for (int i = 0; i < (int)dBuildingList.size(); i++) {
-// 		dBuildingList[i]->toggleSpeed();
-// 	}
-
-// 	for (int i = 0; i < (int)dCatcherList.size(); i++) {
-// 		dCatcherList[i]->toggleSpeed();
-// 	}
-// }
 
 void handleCollisionDetection(XInfo &xInfo) {
 	
@@ -273,6 +266,8 @@ void handleCollisionDetection(XInfo &xInfo) {
 				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
 					cout <<"Hit :)" << endl;
 					score ++;
+					delete dBombList[j];
+					delete dCatcherList[i];
 					dBombList.erase(dBombList.begin() + j);
 					dCatcherList.erase(dCatcherList.begin() + i);
 					break;
@@ -318,6 +313,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 			if  (buildingX > -15 && buildingX < xInfo.width
 				&& dBombY + 10 > buildingY && dBombY - 10 < buildingY + 30
 				&& dBombX + 10 > buildingX - 15 && dBombX - 10 < buildingX + 15){
+					delete dBombList[j];
 					dBombList.erase(dBombList.begin() + j);
 					break;
 			}
@@ -342,6 +338,11 @@ void memoryDealloc(){
 	dBuildingList.clear();
 }
 
+void error(string msg){
+	cerr << msg << endl;
+	memoryDealloc();
+	exit(0);
+}
 /*
  * Function to repaint a display list
  */
