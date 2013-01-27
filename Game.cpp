@@ -229,7 +229,7 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 		dBuildingList.pop_front();
 	}
 	if (!dCatcherList.empty() && dCatcherList[0]->getX() < -100){
-		delete dBuildingList[0];
+		delete dCatcherList[0];
 		dCatcherList.pop_front();
 	}
 }
@@ -370,8 +370,6 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		line.paint(xInfo, 1);
 		line2.paint(xInfo, 1);
 		line3.paint(xInfo, 1);
-
-		memoryDealloc();
 	}
 	else if (splash){
 
@@ -412,9 +410,9 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		for (int i = 0; i < (int)dBombList.size(); i++) {
 			dBombList[i]->paint(xInfo);
 		}
-		// for (int i = 0; i < (int)dBuildingList.size(); i++) {
-		// 	dBuildingList[i]->paint(xInfo);
-		// }
+		for (int i = 0; i < (int)dBuildingList.size(); i++) {
+			dBuildingList[i]->paint(xInfo);
+		}
 
 		// indicate # lives left
 		string text = "Number of Lives: " + convertToString(plane.getLives());
