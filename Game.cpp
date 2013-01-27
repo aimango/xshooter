@@ -28,8 +28,10 @@ using namespace std;
 // TODO:
 // readme for extra features
 // flickering on resizing - b.t buildings
+// draw stars in the background?
 // ask if the makefile is okay
 // better splash screen instructions
+// outline the graphics?
 
 // DONE:
 // memory dealloc - better?
@@ -358,7 +360,7 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 	if (plane.getLives() <= 0) {
 		paused = 0;
 		string lineOne = "GAME OVER.";
-		string lineTwo = "SCORE: "+convertToString(score);
+		string lineTwo = "SCORE: " + convertToString(score);
 		string lineThree = "Press c to play again or q to quit the game.";
 
 		XClearWindow (xInfo.display, xInfo.window);
@@ -368,6 +370,8 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		line.paint(xInfo, 1);
 		line2.paint(xInfo, 1);
 		line3.paint(xInfo, 1);
+
+		memoryDealloc();
 	}
 	else if (splash){
 
@@ -408,9 +412,9 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		for (int i = 0; i < (int)dBombList.size(); i++) {
 			dBombList[i]->paint(xInfo);
 		}
-		for (int i = 0; i < (int)dBuildingList.size(); i++) {
-			dBuildingList[i]->paint(xInfo);
-		}
+		// for (int i = 0; i < (int)dBuildingList.size(); i++) {
+		// 	dBuildingList[i]->paint(xInfo);
+		// }
 
 		// indicate # lives left
 		string text = "Number of Lives: " + convertToString(plane.getLives());

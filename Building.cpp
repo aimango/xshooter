@@ -7,11 +7,8 @@ Building::Building(double startingX){
 }
 
 void Building::paint(XInfo &xInfo) {
-	//cout << y << endl;
-	double newy = (600 - y); // why is this fucked up
-	//cout << xInfo.height << " " << newy << endl;
 	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-		x * xInfo.width/800, newy * xInfo.height / 600,
+		x * xInfo.width/800, (600 - y) * xInfo.height / 600,
 		50 * xInfo.width/800, y * xInfo.height / 600);
 }
 

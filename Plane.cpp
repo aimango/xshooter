@@ -38,6 +38,8 @@ void Plane::reset(){
 }
 
 void Plane::kill(){
+	x = 50;
+	y = 50;
 	lives--;
 }
 
