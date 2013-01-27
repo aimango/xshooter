@@ -11,6 +11,7 @@ class Bomb : public Displayable {
 		void move(XInfo &xInfo);
 		double getX();
 		double getY();
+		double getSpeedY();
 
 	private:
 		double x;

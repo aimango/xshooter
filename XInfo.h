@@ -11,9 +11,9 @@
 struct XInfo {
 	int height;
 	int width;
-	Display *display;
 	int screen;
 	int gameSpeed;
+	Display *display;
 	Window window;
 	GC gc[6];
 	XFontStruct *font;

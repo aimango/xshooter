@@ -28,3 +28,7 @@ double Bomb::getX() {
 double Bomb::getY() {
 	return y;
 }
+
+double Bomb::getSpeedY() {
+	return speedY;
+}

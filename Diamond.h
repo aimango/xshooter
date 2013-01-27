@@ -4,9 +4,9 @@
 #include "XInfo.h"
 #include "Displayable.h"
 
-class Star : public Displayable {
+class Diamond : public Displayable {
 	public:
-		Star(int x, int y, int velocityX);
+		Diamond(int x, int y, int velocityX);
 		void paint(XInfo &xInfo);
 		void move(XInfo &xInfo);
 		double getX();

@@ -14,7 +14,7 @@ void Building::paint(XInfo &xInfo) {
 
 	for (int i = 0; i < y/40; i++) {
 		XDrawRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 
-			x * xInfo.width/800, (600 - y+i*40) * xInfo.height / 600,
+			x * xInfo.width/800, (600 - y + i*40) * xInfo.height / 600,
 			50 * xInfo.width/800, (40 * xInfo.height / 600));
 	}
 

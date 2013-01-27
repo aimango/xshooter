@@ -18,7 +18,7 @@
 #include "XInfo.h"
 #include "Catcher.h"
 #include "Bomb.h"
-#include "Star.h"
+#include "Diamond.h"
 #include "Text.h"
 #include "Plane.h"
 #include "Building.h"
@@ -27,16 +27,17 @@ using namespace std;
 
 
 // TODO:
-// scale stars properly
-// grader mode - use diff color
+
 // flickering on resizing - b.t buildings
-// ask if the makefile is okay
-// outline the graphics?
+
 
 // DONE:
+// scale diamonds properly - changed to diamonds
 // readme for extra features
+// outline the graphics?
+// grader mode - use diff color
 // better splash screen instructions
-// drop stars for more life!
+// drop diamonds for more life!
 // memory dealloc - better?
 // do grader mode
 // need better MVC structure - use header files too
@@ -55,10 +56,12 @@ const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 40;
 
-/*
- * Function to put out a message on error exits.
- */
-void error (string msg);
+int score = 0;
+Plane plane(50, 50);
+deque<Bomb *> dBombList;
+deque<Diamond *> dDiamondList;
+deque<Catcher *> dCatcherList;
+deque<Building *> dBuildingList;
 
 string convertToString (int i) {
 	string s;
@@ -67,12 +70,33 @@ string convertToString (int i) {
 	return out.str();
 }
 
-int score = 0;
-Plane plane(50, 50);
-deque<Bomb *> dBombList;
-deque<Star *> dStarList;
-deque<Catcher *> dCatcherList;
-deque<Building *> dBuildingList;
+// delete everything!
+void memoryDealloc(){
+	for (int i = 0; i < (int)dBombList.size(); i++) {
+		delete dBombList[i];
+	}
+	for (int i = 0; i < (int)dDiamondList.size(); i++) {
+		delete dDiamondList[i];
+	}
+	for (int i = 0; i < (int)dCatcherList.size(); i++) {
+		delete dCatcherList[i];
+	}
+	for (int i = 0; i < (int)dBuildingList.size(); i++) {
+		delete dBuildingList[i];
+	}
+
+	dBombList.clear();
+	dDiamondList.clear();
+	dCatcherList.clear();
+	dBuildingList.clear();
+}
+
+// Function to put out a message on error exits.
+void error(string msg){
+	cerr << msg << endl;
+	memoryDealloc();
+	exit(0);
+}
 
 // set up GC colors - coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 void setGCColors(XInfo &xInfo) {
@@ -128,16 +152,16 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	 * Display opening uses the DISPLAY	environment variable.
 	 * It can go wrong if DISPLAY isn't set, or you don't have permission.
 	 */	
-	xInfo.display = XOpenDisplay( ":0" );
+	xInfo.display = XOpenDisplay(":0");
 	if (!xInfo.display)	{
 		error("Can't open display.");
 	}
 	
 	xInfo.width = 800;
 	xInfo.height = 600;
-	xInfo.screen = DefaultScreen( xInfo.display );
+	xInfo.screen = DefaultScreen(xInfo.display);
 
-	black = XBlackPixel( xInfo.display, xInfo.screen);
+	black = XBlackPixel(xInfo.display, xInfo.screen);
 
 	hints.x = 100;
 	hints.y = 100;
@@ -152,18 +176,18 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 		hints.width, hints.height,			// size of the window
 		Border,								// width of window's border
 		black,								// window border colour
-		black );							// window background colour
+		black);								// window background colour
 		
 	XSetStandardProperties(
-		xInfo.display,				// display containing the window
-		xInfo.window,				// window whose properties are set
-		"Side Scrolling Game",		// window's title
-		"Plane",					// icon's title
-		None,						// pixmap for the icon
-		argv, argc,					// applications command line args
-		&hints );					// size hints for the window
+		xInfo.display,					// display containing the window
+		xInfo.window,					// window whose properties are set
+		"A01 Side Scrolling Game",		// window's title
+		"Planes",						// icon's title
+		None,							// pixmap for the icon
+		argv, argc,						// applications command line args
+		&hints);						// size hints for the window
 
-	// set the game speed (varies if in grader mode or normal mode)
+	// set the game speed (varies based on grader mode vs normal mode)
 	xInfo.gameSpeed = 5;
 
 	// Create Graphic Contexts
@@ -203,13 +227,20 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	sleep(2);
 }
 
+void newGame(XInfo &xInfo){
+	plane.reset();
+	memoryDealloc();
+	score = 0;
+	xInfo.gameSpeed = 5;
+}
+
 /**
  * create new building and catcher when the last building moves far enough.
  * delete building when off screen.
  */
 void handleBuildingsAndCatchers(XInfo &xInfo) {
 	int lastElt = dBuildingList.size()-1;
-	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < 800 ) {
+	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < 825 ) {
 		double positionX = dBuildingList.empty() ? xInfo.width : dBuildingList[lastElt]->getX() + 50;
 		Building *b = new Building(positionX);
 		dBuildingList.push_back(b);
@@ -229,24 +260,25 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 	}
 }
 
-// erase bombs and stars when off screen.
-void handleBombsAndStars(XInfo &xInfo) {
+// erase bombs and diamonds when off screen.
+void handleBombsAndDiamonds(XInfo &xInfo) {
 	for (int i = 0; i < (int)dBombList.size(); i++) {
-		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20){
+		if (dBombList[i]->getX() < -20 || (dBombList[i]->getSpeedY() > 0 && dBombList[i]->getY() > xInfo.height + 20)
+			|| (dBombList[i]->getSpeedY() < 0 && dBombList[i]->getY() < -20)){
 			delete dBombList[i];
 			dBombList.erase(dBombList.begin() + i);
 		}
 	}
-	for (int i = 0; i < (int)dStarList.size(); i++) {
-		if (dStarList[i]->getY() > xInfo.height){
-			delete dStarList[i];
-			dStarList.erase(dStarList.begin() + i);
+	for (int i = 0; i < (int)dDiamondList.size(); i++) {
+		if (dDiamondList[i]->getX() < -20 || dDiamondList[i]->getY() > xInfo.height){
+			delete dDiamondList[i];
+			dDiamondList.erase(dDiamondList.begin() + i);
 		}
 	}
 }
 
+
 void handleCollisionDetection(XInfo &xInfo) {
-	
 	for (int j = 0; j< (int)dBombList.size(); j++) {
 		double dBombX = dBombList[j]->getX();
 		double dBombY = dBombList[j]->getY();
@@ -279,19 +311,19 @@ void handleCollisionDetection(XInfo &xInfo) {
 		}
 	}
 
-	// plane and stars
-	for (int j = 0; j< (int)dStarList.size(); j++) {
-		double dStarX = dStarList[j]->getX();
-		double dStarY = dStarList[j]->getY();
+	// plane and diamonds
+	for (int j = 0; j< (int)dDiamondList.size(); j++) {
+		double dDiamondX = dDiamondList[j]->getX();
+		double dDiamondY = dDiamondList[j]->getY();
 
 		double dPlaneX = plane.getX();
 		double dPlaneY = plane.getY();
-		if (dStarY > dPlaneY - 20 && dStarY < dPlaneY + 20 &&
-			dStarX > dPlaneX - 20 && dStarX < dPlaneX + 20) {
-				cout << "Plane caught a star! Life++" << endl;
+		if (dDiamondY > dPlaneY - 20 && dDiamondY < dPlaneY + 30 &&
+			dDiamondX > dPlaneX - 20 && dDiamondX < dPlaneX + 30) {
+				cout << "Plane caught a diamond! Life++" << endl;
 				plane.incrementLives();
-				delete dStarList[j];
-				dStarList.erase(dStarList.begin() + j);
+				delete dDiamondList[j];
+				dDiamondList.erase(dDiamondList.begin() + j);
 		}
 	}
 
@@ -316,12 +348,17 @@ void handleCollisionDetection(XInfo &xInfo) {
 		double dBombX = dBombList[j]->getX();
 		double dBombY = dBombList[j]->getY();
 
+		// don't bother if they are enemy bombs.
+		if (dBombList[j]->getSpeedY() < 0){ 
+			continue;
+		}
+
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			double buildingX = dBuildingList[i]->getX();
 			double buildingY = 600 - dBuildingList[i]->getY();
 
-			if  (buildingX > -15 && buildingX < xInfo.width
-				&& dBombY + 10 > buildingY
+			if  (buildingX > -15 
+				&& buildingX < xInfo.width && dBombY + 10 > buildingY
 				&& dBombX + 10 > buildingX - 15 && dBombX - 10 < buildingX + 15){
 					delete dBombList[j];
 					dBombList.erase(dBombList.begin() + j);
@@ -331,32 +368,6 @@ void handleCollisionDetection(XInfo &xInfo) {
 	}
 }
 
-// delete everything!
-void memoryDealloc(){
-	for (int i = 0; i < (int)dBombList.size(); i++) {
-		delete dBombList[i];
-	}
-	for (int i = 0; i < (int)dStarList.size(); i++) {
-		delete dStarList[i];
-	}
-	for (int i = 0; i < (int)dCatcherList.size(); i++) {
-		delete dCatcherList[i];
-	}
-	for (int i = 0; i < (int)dBuildingList.size(); i++) {
-		delete dBuildingList[i];
-	}
-
-	dBombList.clear();
-	dStarList.clear();
-	dCatcherList.clear();
-	dBuildingList.clear();
-}
-
-void error(string msg){
-	cerr << msg << endl;
-	memoryDealloc();
-	exit(0);
-}
 
 void handleResizing(XInfo &xInfo){
 	XWindowAttributes windowAttr;
@@ -404,8 +415,8 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 			string name = "Elisa Lou 456.";
 			string lineZero = "INSTRUCTIONS:";
 			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to drop bombs at enemies.";
-			string lineTwo = "Avoid getting attacked by enemy missiles. Pick up stars to gain life.";
-			string lineThree = "Press c to start gameplay. Press q to terminate the game at any time.";
+			string lineTwo = "Avoid getting attacked by enemy missiles. Pick up diamonds to gain life.";
+			string lineThree = "Press c to diamondt gameplay. Press q to terminate the game at any time.";
 			string lineFour = "GRADER MODE: Press g during gameplay to toggle.";
 
 			Text lineName(1, xInfo.height/2-50, name);
@@ -432,8 +443,8 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		unsigned int width = windowInfo.width;
 
 		//re-draws the backgound
-		int color = xInfo.gameSpeed == 2 ? 3 : 5;
-		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[color], 0, 0, width, height);
+		int colorIndex = xInfo.gameSpeed == 2 ? 3 : 5;
+		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[colorIndex], 0, 0, width, height);
 
 		// repaint everything!
 		plane.paint(xInfo);
@@ -443,8 +454,9 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		for (int i = 0; i < (int)dBombList.size(); i++) {
 			dBombList[i]->paint(xInfo);
 		}
-		for (int i = 0; i < (int)dStarList.size(); i++) {
-			dStarList[i]->paint(xInfo);
+		for (int i = 0; i < (int)dDiamondList.size(); i++) {
+			dDiamondList[i]->paint(xInfo);
+			//cout << i << "*__*" << endl;
 		}
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->paint(xInfo);
@@ -462,8 +474,41 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 
 		handleBuildingsAndCatchers(xInfo);
 		handleCollisionDetection(xInfo);
-		handleBombsAndStars(xInfo);
+		handleBombsAndDiamonds(xInfo);
 		XFlush(xInfo.display);
+	}
+}
+
+void handleAnimation(XInfo &xInfo, int splash) {
+	if (!splash) {
+		for (int i = 0; i < (int)dBuildingList.size(); i++) {
+			dBuildingList[i]->move(xInfo);
+		}
+		for (int i = 0; i < (int)dBombList.size(); i++){
+			dBombList[i]->move(xInfo);
+		}
+		for (int i = 0; i < (int)dDiamondList.size(); i++){
+			dDiamondList[i]->move(xInfo);
+		}
+		for (int i = 0; i< (int)dCatcherList.size(); i++){
+			dCatcherList[i]->move(xInfo);
+			dCatcherList[i]->incrementRate();
+
+			int rate = dCatcherList[i]->getRate();
+			if (rate % 100 == 0) {
+
+				// shoot bombs upwards 95% of the time
+				if ((rand() % 20 + 1) > 1) {
+					Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 40, -2*xInfo.gameSpeed, 1);
+					dBombList.push_back(bomb);
+				}
+				// drop a life diamond 5% of the time, at random x locations.
+				else {
+					Diamond *diamond = new Diamond(100*(rand() % 6 + 2), 50, -2*xInfo.gameSpeed);
+					dDiamondList.push_back(diamond);
+				}
+			}
+		}
 	}
 }
 
@@ -496,10 +541,7 @@ void handleKeyPress(XInfo &xInfo, XEvent &event, int &splash) {
 				break;
 			case 'c':
 				if (plane.getLives() <= 0){
-					plane.reset();
-					memoryDealloc();
-					score = 0;
-					xInfo.gameSpeed = 5;
+					newGame(xInfo);
 				}
 				splash = 0;
 				break;
@@ -542,39 +584,6 @@ void handleKeyRelease(XInfo &xInfo, XEvent &event) {
 			case 'd':
 				plane.setVelocityX(0);
 				break;
-		}
-	}
-}
-
-void handleAnimation(XInfo &xInfo, int splash) {
-	if (!splash) {
-		for (int i = 0; i < (int)dBuildingList.size(); i++) {
-			dBuildingList[i]->move(xInfo);
-		}
-		for (int i = 0; i < (int)dBombList.size(); i++){
-			dBombList[i]->move(xInfo);
-		}
-		for (int i = 0; i < (int)dStarList.size(); i++){
-			dStarList[i]->move(xInfo);
-		}
-		for (int i = 0; i< (int)dCatcherList.size(); i++){
-			dCatcherList[i]->move(xInfo);
-			dCatcherList[i]->incrementRate();
-
-			int rate = dCatcherList[i]->getRate();
-			if (rate % 100 == 0) {
-
-				// shoot bombs upwards
-				if ((rand() % 9 + 1) > 2) {
-					Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
-					dBombList.push_back(bomb);
-				}
-				// drop a life star
-				else {
-					Star *star = new Star(100*(rand() % 6 + 2), 50, -2*xInfo.gameSpeed);
-					dStarList.push_back(star);
-				}
-			}
 		}
 	}
 }
