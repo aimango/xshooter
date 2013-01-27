@@ -8,12 +8,12 @@ Building::Building(double startingX){
 
 void Building::paint(XInfo &xInfo) {
 
-	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[3], 
+	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], 
 	 	x * xInfo.width/800, (600 - y) * xInfo.height / 600,
 	 	50 * xInfo.width/800, y * xInfo.height / 600);
 
 	for (int i = 0; i < y/40; i++) {
-		XDrawRectangle(xInfo.display, xInfo.window, xInfo.gc[4], 
+		XDrawRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 
 			x * xInfo.width/800, (600 - y+i*40) * xInfo.height / 600,
 			50 * xInfo.width/800, (40 * xInfo.height / 600));
 	}

@@ -41,7 +41,7 @@ void Star::paint(XInfo &xInfo) {
 	points[9].y = y + size2 * sin(o + 0.9*circumference);
 	points[10] = points[0];
 
-	XDrawLines (xInfo.display, xInfo.window, xInfo.gc[1], points, sizeof(points)/sizeof(XPoint), CoordModeOrigin);
+	XDrawLines (xInfo.display, xInfo.window, xInfo.gc[4], points, sizeof(points)/sizeof(XPoint), CoordModeOrigin);
 }
 
 void Star::move(XInfo &xInfo) {

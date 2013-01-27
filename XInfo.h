@@ -15,7 +15,7 @@ struct XInfo {
 	int screen;
 	int gameSpeed;
 	Window window;
-	GC gc[5];
+	GC gc[6];
 	XFontStruct *font;
 };
 

@@ -28,6 +28,7 @@ using namespace std;
 
 // TODO:
 // scale stars properly
+// grader mode - use diff color
 // flickering on resizing - b.t buildings
 // ask if the makefile is okay
 // outline the graphics?
@@ -73,46 +74,36 @@ deque<Star *> dStarList;
 deque<Catcher *> dCatcherList;
 deque<Building *> dBuildingList;
 
-
 // set up GC colors - coloring borrowed from http://slist.lilotux.net/linux/xlib/color-drawing.c
 void setGCColors(XInfo &xInfo) {
 	Colormap screen_colormap;
 	Status rc;
 	XColor color;
-
-	// use dark slate blue
-	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "dark slate grey", &color, &color);
-	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated color.");
-	}
-	XSetForeground(xInfo.display, xInfo.gc[0], color.pixel);
-
-	// use powder blue
-	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &color, &color);
-	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
-	}
-	XSetForeground(xInfo.display, xInfo.gc[1], color.pixel);
-
-	// use white
-	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
-
-	// use pink
-	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "plum", &color, &color);
-	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated 'pink' color.");
-	}
-	XSetForeground(xInfo.display, xInfo.gc[3], color.pixel);
+	string colors[] = {
+		"plum",
+		"dark slate grey",
+		"#AFEEEE",
+		"#008080"
+	};
 
 	// use black
-	XSetForeground(xInfo.display, xInfo.gc[4], BlackPixel(xInfo.display, xInfo.screen));
+	XSetForeground(xInfo.display, xInfo.gc[0], BlackPixel(xInfo.display, xInfo.screen));
+
+	// use white
+	XSetForeground(xInfo.display, xInfo.gc[1], WhitePixel(xInfo.display, xInfo.screen));
+
+	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
+	for (int i = 2; i < 6; i++) {
+		rc = XAllocNamedColor(xInfo.display, screen_colormap, colors[i-2].c_str(), &color, &color);
+		if (rc == 0) {
+			error("XAllocNamedColor - failed to allocated color.");
+		}
+		XSetForeground(xInfo.display, xInfo.gc[i], color.pixel);
+	}
 }
 
+// source http://www.gamedev.net/topic/285005-anyone-knows-how-to-hideshow-mouse-pointer-under-linux-using-opengl/
 void makeBlankCursor(XInfo &xInfo) {
-	// vars to make blank cursor
 	XColor dummy;
 	char data[1] = {0};
 
@@ -128,9 +119,7 @@ void makeBlankCursor(XInfo &xInfo) {
 	XDefineCursor(xInfo.display, xInfo.window, cursor);
 }
 
- /*
- * Initialize X and create a window
- */
+// initialize X and create window
 void initX(int argc, char *argv[], XInfo &xInfo) {
 	XSizeHints hints;
 	unsigned long black;
@@ -178,7 +167,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	xInfo.gameSpeed = 5;
 
 	// Create Graphic Contexts
-	for (int i = 0; i <= 4; i++){
+	for (int i = 0; i <= 5; i++){
 		xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
 		XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 		XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
@@ -214,8 +203,10 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	sleep(2);
 }
 
-// create new building and catcher when the last building moves far enough.
-// delete building when off screen.
+/**
+ * create new building and catcher when the last building moves far enough.
+ * delete building when off screen.
+ */
 void handleBuildingsAndCatchers(XInfo &xInfo) {
 	int lastElt = dBuildingList.size()-1;
 	if (dBuildingList.empty() || dBuildingList[lastElt]->getX() < 800 ) {
@@ -247,7 +238,7 @@ void handleBombsAndStars(XInfo &xInfo) {
 		}
 	}
 	for (int i = 0; i < (int)dStarList.size(); i++) {
-		if (dStarList[i]->getX() < -20 || dStarList[i]->getY() > xInfo.height || dStarList[i]->getY() < -20){
+		if (dStarList[i]->getY() > xInfo.height){
 			delete dStarList[i];
 			dStarList.erase(dStarList.begin() + i);
 		}
@@ -408,25 +399,28 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 			string lineZero = "Press c to continue gameplay. Press q to quit the game.";
 			Text line0(1, xInfo.height/2-20, lineZero);
 			line0.paint(xInfo, 1);
-		} else {
+		} 
+		else {
 			string name = "Elisa Lou 456.";
 			string lineZero = "INSTRUCTIONS:";
 			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to drop bombs at enemies.";
 			string lineTwo = "Avoid getting attacked by enemy missiles. Pick up stars to gain life.";
 			string lineThree = "Press c to start gameplay. Press q to terminate the game at any time.";
+			string lineFour = "GRADER MODE: Press g during gameplay to toggle.";
 
 			Text lineName(1, xInfo.height/2-50, name);
 			Text line0(1, xInfo.height/2-20, lineZero);
 			Text line1(1, xInfo.height/2, lineOne);
 			Text line2(1, xInfo.height/2 + 20, lineTwo);
 			Text line3(1, xInfo.height/2 + 40, lineThree);
+			Text line4(1, xInfo.height/2 + 70, lineFour);
 			
 			lineName.paint(xInfo, 1);
 			line0.paint(xInfo, 1);
 			line1.paint(xInfo, 1);
 			line2.paint(xInfo, 1);
 			line3.paint(xInfo, 1);
-			
+			line4.paint(xInfo, 1);
 		}
 	}
 	else {
@@ -438,7 +432,8 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		unsigned int width = windowInfo.width;
 
 		//re-draws the backgound
-		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[0], 0, 0, width, height);
+		int color = xInfo.gameSpeed == 2 ? 3 : 5;
+		XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[color], 0, 0, width, height);
 
 		// repaint everything!
 		plane.paint(xInfo);
@@ -570,7 +565,7 @@ void handleAnimation(XInfo &xInfo, int splash) {
 			if (rate % 100 == 0) {
 
 				// shoot bombs upwards
-				if ((rand() % 9 + 1) > 5) {
+				if ((rand() % 9 + 1) > 2) {
 					Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
 					dBombList.push_back(bomb);
 				}

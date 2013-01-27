@@ -12,3 +12,5 @@ I also disable users to resize the window height lower than 400 and the window w
 
 4. Extra Life.
 I drop stars that give +1 Life to the helicopter. 
+
+Note: Grader mode can be accessed through the 'g' hotkey.

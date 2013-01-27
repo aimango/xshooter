@@ -22,10 +22,10 @@ void Plane::paint(XInfo &xInfo) {
 		y = xInfo.height;
 	}
 
-	XFillArc(xInfo.display, xInfo.window, xInfo.gc[2],
+	XFillArc(xInfo.display, xInfo.window, xInfo.gc[1],
 		x * xInfo.width/800, y * xInfo.height/600, 
 		width * xInfo.width/800, height * xInfo.height/600, 0, 360*64);
-	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[2], 
+	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
 		(x-15) * xInfo.width/800, (y+10) * xInfo.height/600, 
 		30 * xInfo.width/800, 10 * xInfo.height/600);
 }
