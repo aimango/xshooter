@@ -43,6 +43,10 @@ void Plane::kill(){
 	lives--;
 }
 
+void Plane::incrementLives(){
+	lives++;
+}
+
 void Plane::setVelocityX(int dir) {
 	if (dir) {
 		velocityX += 10;

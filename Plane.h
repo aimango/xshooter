@@ -12,6 +12,7 @@ class Plane : public Displayable {
 		void setVelocityY(int dir);
 		void reset();
 		void kill();
+		void incrementLives();
 		int getVelocityX();
 		int getVelocityY();
 		int getX();

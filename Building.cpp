@@ -7,9 +7,17 @@ Building::Building(double startingX){
 }
 
 void Building::paint(XInfo &xInfo) {
-	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[1], 
-		x * xInfo.width/800, (600 - y) * xInfo.height / 600,
-		50 * xInfo.width/800, y * xInfo.height / 600);
+
+	XFillRectangle(xInfo.display, xInfo.window, xInfo.gc[3], 
+	 	x * xInfo.width/800, (600 - y) * xInfo.height / 600,
+	 	50 * xInfo.width/800, y * xInfo.height / 600);
+
+	for (int i = 0; i < y/40; i++) {
+		XDrawRectangle(xInfo.display, xInfo.window, xInfo.gc[4], 
+			x * xInfo.width/800, (600 - y+i*40) * xInfo.height / 600,
+			50 * xInfo.width/800, (40 * xInfo.height / 600));
+	}
+
 }
 
 void Building::move(XInfo &xInfo) {

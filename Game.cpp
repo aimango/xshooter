@@ -18,6 +18,7 @@
 #include "XInfo.h"
 #include "Catcher.h"
 #include "Bomb.h"
+#include "Star.h"
 #include "Text.h"
 #include "Plane.h"
 #include "Building.h"
@@ -26,14 +27,15 @@ using namespace std;
 
 
 // TODO:
-// readme for extra features
+// scale stars properly
 // flickering on resizing - b.t buildings
-// draw stars in the background?
 // ask if the makefile is okay
-// better splash screen instructions
 // outline the graphics?
 
 // DONE:
+// readme for extra features
+// better splash screen instructions
+// drop stars for more life!
 // memory dealloc - better?
 // do grader mode
 // need better MVC structure - use header files too
@@ -67,6 +69,7 @@ string convertToString (int i) {
 int score = 0;
 Plane plane(50, 50);
 deque<Bomb *> dBombList;
+deque<Star *> dStarList;
 deque<Catcher *> dCatcherList;
 deque<Building *> dBuildingList;
 
@@ -75,36 +78,37 @@ deque<Building *> dBuildingList;
 void setGCColors(XInfo &xInfo) {
 	Colormap screen_colormap;
 	Status rc;
+	XColor color;
 
-	// use midnight blue 
-	XColor blue;
+	// use dark slate blue
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "midnight blue", &blue, &blue);
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "dark slate grey", &color, &color);
 	if (rc == 0) {
-		error("XAllocNamedColor - failed to allocated 'midnight blue' color.");
+		error("XAllocNamedColor - failed to allocated color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[0], blue.pixel);
+	XSetForeground(xInfo.display, xInfo.gc[0], color.pixel);
 
-	// use medium purple
-	XColor purple;
+	// use powder blue
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &purple, &purple);
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "medium purple", &color, &color);
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'medium purple' color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[1], purple.pixel);
-	
+	XSetForeground(xInfo.display, xInfo.gc[1], color.pixel);
+
 	// use white
 	XSetForeground(xInfo.display, xInfo.gc[2], WhitePixel(xInfo.display, xInfo.screen));
 
 	// use pink
-	XColor pink;
 	screen_colormap = DefaultColormap(xInfo.display, DefaultScreen(xInfo.display));
-	rc = XAllocNamedColor(xInfo.display, screen_colormap, "pink", &pink, &pink);
+	rc = XAllocNamedColor(xInfo.display, screen_colormap, "plum", &color, &color);
 	if (rc == 0) {
 		error("XAllocNamedColor - failed to allocated 'pink' color.");
 	}
-	XSetForeground(xInfo.display, xInfo.gc[3], pink.pixel);
+	XSetForeground(xInfo.display, xInfo.gc[3], color.pixel);
+
+	// use black
+	XSetForeground(xInfo.display, xInfo.gc[4], BlackPixel(xInfo.display, xInfo.screen));
 }
 
 void makeBlankCursor(XInfo &xInfo) {
@@ -174,11 +178,11 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	xInfo.gameSpeed = 5;
 
 	// Create Graphic Contexts
-	for (int i = 0; i <= 3; i++){
+	for (int i = 0; i <= 4; i++){
 		xInfo.gc[i] = XCreateGC(xInfo.display, xInfo.window, 0, 0);
 		XSetBackground(xInfo.display, xInfo.gc[i], WhitePixel(xInfo.display, xInfo.screen));
 		XSetFillStyle(xInfo.display, xInfo.gc[i], FillSolid);
-		XSetLineAttributes(xInfo.display, xInfo.gc[i], 1, LineSolid, CapButt, JoinRound);
+		XSetLineAttributes(xInfo.display, xInfo.gc[i], 2, LineSolid, CapButt, JoinRound);
 	}
 	setGCColors(xInfo);
 	
@@ -190,7 +194,7 @@ void initX(int argc, char *argv[], XInfo &xInfo) {
 	XAutoRepeatOff(xInfo.display);
 
 	// seed the random # generator
-	srand (time(NULL));
+	srand(time(NULL));
 
 	// hide the mouse cursor
 	makeBlankCursor(xInfo);
@@ -219,8 +223,8 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 		Building *b = new Building(positionX);
 		dBuildingList.push_back(b);
 	
-		int person = rand() % 4;
-		if (person == 1) {
+		// spawn an enemy
+		if (rand() % 5 == 1) {
 			Catcher *c = new Catcher(positionX + 20, b->getY());
 			dCatcherList.push_back(c);
 		}
@@ -234,12 +238,18 @@ void handleBuildingsAndCatchers(XInfo &xInfo) {
 	}
 }
 
-// erase bombs when off screen.
-void handleBombs(XInfo &xInfo) {
+// erase bombs and stars when off screen.
+void handleBombsAndStars(XInfo &xInfo) {
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		if (dBombList[i]->getX() < -20 || dBombList[i]->getY() > xInfo.height || dBombList[i]->getY() < -20){
 			delete dBombList[i];
 			dBombList.erase(dBombList.begin() + i);
+		}
+	}
+	for (int i = 0; i < (int)dStarList.size(); i++) {
+		if (dStarList[i]->getX() < -20 || dStarList[i]->getY() > xInfo.height || dStarList[i]->getY() < -20){
+			delete dStarList[i];
+			dStarList.erase(dStarList.begin() + i);
 		}
 	}
 }
@@ -256,7 +266,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 			double dCatcherY = 600 - dCatcherList[i]->getY();
 
 			if  (dBombY + 10 > dCatcherY && dBombY - 10 < dCatcherY + 30
-				&& dBombX + 10 > dCatcherX - 15 && dBombX - 10 < dCatcherX + 15){
+				&& dBombX + 10 > dCatcherX - 20 && dBombX - 10 < dCatcherX + 20){
 					cout <<"Hit :)" << endl;
 					score ++;
 					delete dBombList[j];
@@ -272,9 +282,25 @@ void handleCollisionDetection(XInfo &xInfo) {
 		double dPlaneY = plane.getY();
 		if (dBombY > dPlaneY - 20 && dBombY < dPlaneY + 20 &&
 			dBombX > dPlaneX - 20 && dBombX < dPlaneX + 20) {
-				cout << "Plane ran into bomb!" << endl;
+				cout << "Plane ran into enemy bomb! Life--" << endl;
 				plane.kill();
 				break;
+		}
+	}
+
+	// plane and stars
+	for (int j = 0; j< (int)dStarList.size(); j++) {
+		double dStarX = dStarList[j]->getX();
+		double dStarY = dStarList[j]->getY();
+
+		double dPlaneX = plane.getX();
+		double dPlaneY = plane.getY();
+		if (dStarY > dPlaneY - 20 && dStarY < dPlaneY + 20 &&
+			dStarX > dPlaneX - 20 && dStarX < dPlaneX + 20) {
+				cout << "Plane caught a star! Life++" << endl;
+				plane.incrementLives();
+				delete dStarList[j];
+				dStarList.erase(dStarList.begin() + j);
 		}
 	}
 
@@ -304,7 +330,7 @@ void handleCollisionDetection(XInfo &xInfo) {
 			double buildingY = 600 - dBuildingList[i]->getY();
 
 			if  (buildingX > -15 && buildingX < xInfo.width
-				&& dBombY + 10 > buildingY && dBombY - 10 < buildingY + 30
+				&& dBombY + 10 > buildingY
 				&& dBombX + 10 > buildingX - 15 && dBombX - 10 < buildingX + 15){
 					delete dBombList[j];
 					dBombList.erase(dBombList.begin() + j);
@@ -319,6 +345,9 @@ void memoryDealloc(){
 	for (int i = 0; i < (int)dBombList.size(); i++) {
 		delete dBombList[i];
 	}
+	for (int i = 0; i < (int)dStarList.size(); i++) {
+		delete dStarList[i];
+	}
 	for (int i = 0; i < (int)dCatcherList.size(); i++) {
 		delete dCatcherList[i];
 	}
@@ -327,6 +356,7 @@ void memoryDealloc(){
 	}
 
 	dBombList.clear();
+	dStarList.clear();
 	dCatcherList.clear();
 	dBuildingList.clear();
 }
@@ -364,10 +394,10 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		string lineThree = "Press c to play again or q to quit the game.";
 
 		XClearWindow (xInfo.display, xInfo.window);
-		Text line(1, xInfo.height/2 - 20, lineOne);
+		Text line1(1, xInfo.height/2 - 20, lineOne);
 		Text line2(1, xInfo.height/2, lineTwo);
 		Text line3(1, xInfo.height/2 + 20, lineThree);
-		line.paint(xInfo, 1);
+		line1.paint(xInfo, 1);
 		line2.paint(xInfo, 1);
 		line3.paint(xInfo, 1);
 	}
@@ -379,16 +409,24 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 			Text line0(1, xInfo.height/2-20, lineZero);
 			line0.paint(xInfo, 1);
 		} else {
-			string lineZero = "Elisa Lou 456.";
-			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to make bombs.";
-			string lineTwo = "Press c to start gameplay. Press q to terminate the game at any time.";
+			string name = "Elisa Lou 456.";
+			string lineZero = "INSTRUCTIONS:";
+			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to drop bombs at enemies.";
+			string lineTwo = "Avoid getting attacked by enemy missiles. Pick up stars to gain life.";
+			string lineThree = "Press c to start gameplay. Press q to terminate the game at any time.";
 
+			Text lineName(1, xInfo.height/2-50, name);
 			Text line0(1, xInfo.height/2-20, lineZero);
-			Text line(1, xInfo.height/2, lineOne);
+			Text line1(1, xInfo.height/2, lineOne);
 			Text line2(1, xInfo.height/2 + 20, lineTwo);
-			line.paint(xInfo, 1);
-			line2.paint(xInfo, 1);
+			Text line3(1, xInfo.height/2 + 40, lineThree);
+			
+			lineName.paint(xInfo, 1);
 			line0.paint(xInfo, 1);
+			line1.paint(xInfo, 1);
+			line2.paint(xInfo, 1);
+			line3.paint(xInfo, 1);
+			
 		}
 	}
 	else {
@@ -410,6 +448,9 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 		for (int i = 0; i < (int)dBombList.size(); i++) {
 			dBombList[i]->paint(xInfo);
 		}
+		for (int i = 0; i < (int)dStarList.size(); i++) {
+			dStarList[i]->paint(xInfo);
+		}
 		for (int i = 0; i < (int)dBuildingList.size(); i++) {
 			dBuildingList[i]->paint(xInfo);
 		}
@@ -426,7 +467,7 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 
 		handleBuildingsAndCatchers(xInfo);
 		handleCollisionDetection(xInfo);
-		handleBombs(xInfo);
+		handleBombsAndStars(xInfo);
 		XFlush(xInfo.display);
 	}
 }
@@ -518,15 +559,26 @@ void handleAnimation(XInfo &xInfo, int splash) {
 		for (int i = 0; i < (int)dBombList.size(); i++){
 			dBombList[i]->move(xInfo);
 		}
+		for (int i = 0; i < (int)dStarList.size(); i++){
+			dStarList[i]->move(xInfo);
+		}
 		for (int i = 0; i< (int)dCatcherList.size(); i++){
 			dCatcherList[i]->move(xInfo);
 			dCatcherList[i]->incrementRate();
 
-			// Enemies shoot bombs at a specified rate
 			int rate = dCatcherList[i]->getRate();
-			if (rate % 75 == 0) {
-				Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
-				dBombList.push_back(bomb);
+			if (rate % 100 == 0) {
+
+				// shoot bombs upwards
+				if ((rand() % 9 + 1) > 5) {
+					Bomb *bomb = new Bomb(dCatcherList[i]->getX(), 600 - dCatcherList[i]->getY() - 30, -2*xInfo.gameSpeed, 1);
+					dBombList.push_back(bomb);
+				}
+				// drop a life star
+				else {
+					Star *star = new Star(100*(rand() % 6 + 2), 50, -2*xInfo.gameSpeed);
+					dStarList.push_back(star);
+				}
 			}
 		}
 	}

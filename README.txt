@@ -9,3 +9,6 @@ I kept score of the number of enemies destroyed.
 3. Game Resize.
 I allow the user to resize the window anytime that the game is opened (including during gameplay).
 I also disable users to resize the window height lower than 400 and the window width lower than 600 so that objects can be drawn properly.
+
+4. Extra Life.
+I drop stars that give +1 Life to the helicopter. 
