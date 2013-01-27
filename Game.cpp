@@ -56,6 +56,7 @@ const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 40;
 
+int bestScore = 0;
 int score = 0;
 Plane plane(50, 50);
 deque<Bomb *> dBombList;
@@ -390,9 +391,19 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 	handleResizing(xInfo);
 
 	if (plane.getLives() <= 0) {
+		if (score > bestScore){
+			bestScore = score;
+		}
 		paused = 0;
 		string lineOne = "GAME OVER.";
-		string lineTwo = "SCORE: " + convertToString(score);
+		string lineTwo = convertToString(score)+ " PTS";
+		if (score == 0) {
+			lineTwo = "TRY AGAIN .. YOU GOT " + lineTwo;
+		}
+		else {
+			lineTwo = (score == bestScore) ? 
+				("YOU CURRENTLY HOLD THE HIGHEST SCORE OF " + lineTwo): ("HIGH SCORE: " + convertToString(bestScore) + " YOUR SCORE: " + lineTwo);
+		}
 		string lineThree = "Press c to play again or q to quit the game.";
 
 		XClearWindow (xInfo.display, xInfo.window);
