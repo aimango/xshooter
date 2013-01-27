@@ -6,10 +6,10 @@ Diamond::Diamond(int x, int y, int velocityX): x(x), y(y) {
 }
 
 void Diamond::paint(XInfo &xInfo) {
-	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], x*xInfo.width/800, y*xInfo.height/600, (x+15)*xInfo.width/800, (y-15)*xInfo.height/600);
-	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+15)*xInfo.width/800, (y-15)*xInfo.height/600, (x+30)*xInfo.width/800, y*xInfo.height/600);
-	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+30)*xInfo.width/800, y*xInfo.height/600, (x+15)*xInfo.width/800, (y+15)*xInfo.height/600);
-	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+15)*xInfo.width/800, (y+15)*xInfo.height/600, x*xInfo.width/800, y*xInfo.height/600);
+	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], x*xInfo.width/800, y*xInfo.height/600, (x+10)*xInfo.width/800, (y-10)*xInfo.height/600);
+	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+10)*xInfo.width/800, (y-10)*xInfo.height/600, (x+20)*xInfo.width/800, y*xInfo.height/600);
+	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+20)*xInfo.width/800, y*xInfo.height/600, (x+10)*xInfo.width/800, (y+10)*xInfo.height/600);
+	XDrawLine(xInfo.display, xInfo.window, xInfo.gc[4], (x+10)*xInfo.width/800, (y+10)*xInfo.height/600, x*xInfo.width/800, y*xInfo.height/600);
 }
 
 void Diamond::move(XInfo &xInfo) {
