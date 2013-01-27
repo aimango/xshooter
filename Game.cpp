@@ -25,33 +25,6 @@
 
 using namespace std;
 
-
-// TODO:
-
-// flickering on resizing - b.t buildings
-
-
-// DONE:
-// scale diamonds properly - changed to diamonds
-// readme for extra features
-// outline the graphics?
-// grader mode - use diff color
-// better splash screen instructions
-// drop diamonds for more life!
-// memory dealloc - better?
-// do grader mode
-// need better MVC structure - use header files too
-// ****get rid of the remove () functions and use deque erase. 
-// create `game over` screen - done
-// 'new game' screen
-// collision
-// shooting from enemy
-// 3 lives implementation - done
-// catchers on the buildings - done
-// keyboard acceleration - done
-// game pausing - done
-// resizing fix - goooood 
-
 const int Border = 5;
 const int BufferSize = 10;
 const int FPS = 40;

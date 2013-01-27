@@ -9,7 +9,7 @@ I used midnight purple for the background, hot pink for the enemies and enemiesâ
 I kept score of the number of enemies destroyed.
 
 3. High Score.
-A 'top score' is kept as long as the game window is opened. Users will be able to know if they beat the high score or not when they reach game over.
+A high score is maintained as long as the game window is opened. Users will be able to know if they beat the high score or not when they reach game over.
 
 3. Game Resize.
 I allow the user to resize the window anytime that the game is opened (including during gameplay).
