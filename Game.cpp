@@ -400,7 +400,7 @@ void repaint( XInfo &xInfo, int splash, int &paused) {
 			string lineZero = "INSTRUCTIONS:";
 			string lineOne = "Use w-a-s-d keys to move around the helicopter, and m to drop bombs at enemies.";
 			string lineTwo = "Avoid getting attacked by enemy missiles. Pick up diamonds to gain life.";
-			string lineThree = "Press c to diamondt gameplay. Press q to terminate the game at any time.";
+			string lineThree = "Press c to continue gameplay. Press q to terminate the game at any time.";
 			string lineFour = "GRADER MODE: Press g during gameplay to toggle.";
 
 			Text lineName(1, xInfo.height/2-50, name);

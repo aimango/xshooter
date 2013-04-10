@@ -1,25 +1,25 @@
-Elisa Lou e3lou 20372456
+This is essentially a Side Scrolling game built using X Windows (C++). This was an assignment for CS 349 (User Interfaces) taught at uWaterloo during the Winter 2013 term, built by myself (Elisa Lou).
 
-ASSSIGNMENT 1 ENHANCEMENTS:
+Disclaimer: Policy 73 at Waterloo defines IP ownership. Students own everything that they produce as a member of the Waterloo community, and the university has no implied ownership in anything created by its students.
 
-1. Added Colour.
-I used midnight purple for the background, hot pink for the enemies and enemies’ bombs, medium purple for the buildings, and white for the helicopter and helicopter’s bombs. 
 
-2. Scoring.
-I kept score of the number of enemies destroyed.
+-----
 
-3. High Score.
-A high score is maintained as long as the game window is opened. Users will be able to know if they beat the high score or not when they reach game over.
+How to Play:
+Shoot the enemies. Avoid the bullets they shoot at you and make sure you don't run into buildings. You get 3 lives to begin with, and can obtain more lives from the falling diamonds.
 
-3. Game Resize.
-I allow the user to resize the window anytime that the game is opened (including during gameplay).
-I also disable users to resize the window height lower than 400 and the window width lower than 600 so that objects can be drawn properly.
+Move using w-a-s-d keys. 
+Release a bomb using the m key. 
+Pause the game using the f key.
+Start/continue the game using the c key. 
+Press q to quit the game and close the window.
 
-4. Extra Life.
-I drop diamonds that give +1 Life to the helicopter. 
+-----
 
-NOTES FOR TA:
--make assign1: builds game (executible called 'assign1')
--make run: runs 'assign1' executible (if it exists)
+How to Run (need X libraries to compile):
+-make assign1: builds game (executable called 'assign1')
+-make run: runs 'assign1' executable (if it exists)
 -make all: builds and runs game
 -Grader mode and normal mode can be toggled through the 'g' hotkey.
+
+The game is resizable, with minimum screen size of 600x400.
