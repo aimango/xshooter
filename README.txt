@@ -1,4 +1,4 @@
-This is essentially a Side Scrolling game built using X Windows (C++). This was an assignment for CS 349 (User Interfaces) taught at uWaterloo during the Winter 2013 term, built by myself (Elisa Lou).
+This is essentially a Side Scrolling game built using X Windows (C++). This was an assignment for CS 349 (User Interfaces) taught at uWaterloo during the Winter 2013 term, built by myself (Elisa Lou). The project was originally done under SVN version control, I've ported it here to my Github.
 
 Disclaimer: Policy 73 at Waterloo defines IP ownership. Students own everything that they produce as a member of the Waterloo community, and the university has no implied ownership in anything created by its students.
 
