@@ -17,8 +17,8 @@ Press q to quit the game and close the window.
 -----
 
 How to Run (need X libraries to compile):
--make assign1: builds game (executable called 'assign1')
--make run: runs 'assign1' executable (if it exists)
+-make xshooter: builds game (executable called 'xshooter')
+-make run: runs 'xshooter' executable (if it exists)
 -make all: builds and runs game
 -Grader mode and normal mode can be toggled through the 'g' hotkey.
 
